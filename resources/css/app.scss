@@ -1,0 +1,339 @@
+// 1. Import Google Fonts (Inter)
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+// 2. Override Variabel Bootstrap
+$primary:       #4f46e5; // Indigo 600
+$secondary:     #64748b; // Slate 500
+$success:       #10b981; // Emerald 500
+$info:          #0ea5e9; // Sky 500
+$warning:       #f59e0b; // Amber 500
+$danger:        #ef4444; // Red 500
+$light:         #f3f4f6; // Gray 100
+$dark:          #111827; // Gray 900
+
+// Font Family
+$font-family-sans-serif: 'Inter', system-ui, -apple-system, sans-serif;
+
+// Sidebar Config Variables
+$sidebar-bg:    #312e81; // Indigo 900 (Updated)
+$sidebar-width: 280px;   // Lebar diperbesar sedikit agar pas dengan desain baru
+
+// 3. Import Bootstrap
+@import 'bootstrap/scss/bootstrap';
+
+// 4. Custom CSS Tambahan
+body {
+    background-color: #f8fafc;
+    font-size: 0.925rem;
+}
+
+// === NEW SIDEBAR STYLING (MATCHING REACT DESIGN) ===
+// Local variables for sidebar specific shades
+$indigo-900: #312e81;
+$indigo-800: #3730a3;
+$indigo-700: #4338ca;
+$indigo-300: #a5b4fc;
+$indigo-200: #c7d2fe;
+
+.sidebar-wrapper {
+    width: $sidebar-width;
+    background-color: $indigo-900;
+    min-height: 100vh;
+    display: flex;          // Flexbox untuk layout atas-bawah
+    flex-direction: column; // Susunan vertikal
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    transition: margin 0.25s ease-out;
+
+    // A. Bagian Header Logo
+    .sidebar-brand {
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background-color: white;
+            border-radius: 0.5rem; // Rounded
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: $indigo-900;
+            font-size: 1.2rem;
+        }
+
+        .brand-text {
+            line-height: 1.2;
+            h6 { font-weight: 700; margin: 0; color: white; font-size: 0.95rem; text-transform: uppercase; }
+            span { font-size: 0.65rem; color: $indigo-300; letter-spacing: 0.5px; }
+        }
+    }
+
+    // B. Bagian Menu
+    .sidebar-menu {
+        padding: 0 1rem;
+        flex-grow: 1; // Mengisi ruang kosong agar footer terdorong ke bawah
+        overflow-y: auto;
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.25rem;
+            color: $indigo-200;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            font-size: 0.95rem;
+            border: none;
+
+            i { width: 20px; text-align: center; font-size: 1.1rem; }
+
+            &:hover {
+                background-color: $indigo-800;
+                color: white;
+            }
+
+            &.active {
+                background-color: $indigo-700;
+                color: white;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+        }
+
+        .nav-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: $indigo-300;
+            margin: 1.5rem 0 0.5rem 1rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            padding: 0;
+        }
+    }
+
+    // C. Bagian Footer Card (Informasi Divisi)
+    .sidebar-footer {
+        padding: 1rem;
+        margin-top: auto;
+
+        .info-card {
+            background-color: $indigo-800;
+            border: 1px solid rgba($indigo-700, 0.5);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            
+            .info-header {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 0.5rem;
+                color: $indigo-300;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+
+            .user-role { color: white; font-weight: 600; font-size: 0.9rem; margin: 0; }
+            .user-desc { color: $indigo-300; font-size: 0.75rem; margin: 0; }
+        }
+    }
+}
+
+// Main Content Wrapper
+.main-content {
+    margin-left: $sidebar-width;
+    padding: 2rem;
+    transition: margin 0.25s ease-out;
+}
+
+// Styling Card (Modern)
+.card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -1px rgb(0 0 0 / 0.05);
+    background: white;
+    
+    .card-header {
+        background: transparent;
+        border-bottom: 1px solid #f1f5f9;
+        padding: 1.25rem 1.5rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+}
+
+// Mobile Responsiveness
+@media (max-width: 991.98px) {
+    .sidebar-wrapper {
+        margin-left: - $sidebar-width;
+    }
+    .main-content {
+        margin-left: 0;
+    }
+    
+    // Class toggler untuk menampilkan sidebar di mobile
+    .sidebar-toggled .sidebar-wrapper {
+        margin-left: 0;
+    }
+    
+    // Overlay saat sidebar muncul di mobile
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: 999;
+        display: none;
+    }
+    .sidebar-toggled .sidebar-overlay {
+        display: block;
+    }
+}
+
+.login-page {
+    background-color: #312e81; // Indigo 900
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    font-family: 'Inter', sans-serif;
+
+    .login-card {
+        width: 100%;
+        max-width: 450px;
+        background: white;
+        border-radius: 1.5rem; // Rounded-3xl
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        overflow: hidden;
+        border: none;
+
+        // Bagian Header Biru
+        .login-header {
+            background-color: #4f46e5; // Indigo 600
+            padding: 3rem 2rem 2.5rem;
+            text-align: center;
+            color: white;
+            position: relative;
+
+            // Efek Lengkungan SVG Background
+            .header-bg {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                opacity: 0.1;
+                pointer-events: none;
+            }
+
+            // Kotak Logo Putih
+            .logo-box {
+                width: 80px;
+                height: 80px;
+                background: white;
+                border-radius: 1rem;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                color: #4f46e5;
+                // font-size: 2.5rem; // Ukuran Icon
+                margin-bottom: 1.5rem;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                transform: rotate(-6deg);
+                transition: transform 0.3s ease;
+
+                &:hover {
+                    transform: rotate(0deg);
+                }
+
+                img {
+                width: 65%;       // Ukuran logo di dalam kotak
+                height: auto;     // Tinggi menyesuaikan proporsi
+                object-fit: contain;
+                filter: drop-shadow(0 4px 3px rgba(0,0,0,0.1)); // Efek bayangan pada logonya
+                }
+
+            }
+
+            h4 { font-weight: 700; margin-bottom: 0.25rem; }
+            p { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.8; margin: 0; }
+        }
+
+        // Bagian Form Body
+        .login-body {
+            padding: 2.5rem;
+
+            label {
+                font-size: 0.75rem;
+                font-weight: 700;
+                color: #9ca3af; // Gray 400
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 0.5rem;
+                display: block;
+            }
+
+            .input-wrapper {
+                position: relative;
+                
+                i {
+                    position: absolute;
+                    left: 1rem;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #9ca3af;
+                    font-size: 1.1rem;
+                }
+
+                .form-control {
+                    padding: 0.8rem 1rem 0.8rem 3rem; // Padding kiri besar buat icon
+                    background-color: #f9fafb; // Gray 50
+                    border: 1px solid #f3f4f6;
+                    border-radius: 1rem; // Rounded-2xl
+                    font-size: 0.95rem;
+                    color: #1f2937;
+                    transition: all 0.2s;
+
+                    &::placeholder { color: #d1d5db; }
+                    
+                    &:focus {
+                        background-color: white;
+                        border-color: #4f46e5;
+                        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+                    }
+                }
+            }
+
+            .btn-login {
+                background-color: #4f46e5;
+                color: white;
+                font-weight: 700;
+                padding: 1rem;
+                border-radius: 1rem;
+                width: 100%;
+                border: none;
+                box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+                transition: all 0.2s;
+
+                &:hover {
+                    background-color: #4338ca;
+                    transform: translateY(-2px);
+                }
+                &:active { transform: translateY(0); }
+            }
+        }
+    }
+}
