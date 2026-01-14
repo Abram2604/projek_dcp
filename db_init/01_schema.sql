@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: db:3306
--- Waktu pembuatan: 14 Jan 2026 pada 06.07
+-- Waktu pembuatan: 14 Jan 2026 pada 08.47
 -- Versi server: 8.0.44
 -- Versi PHP: 8.3.26
 
@@ -25,6 +25,56 @@ DELIMITER $$
 --
 -- Prosedur
 --
+CREATE DEFINER=`root`@`%` PROCEDURE `sp_dashboard_anggota` (IN `p_id_anggota` INT)   BEGIN
+    -- 1. Cek Jam Masuk Hari Ini
+    SELECT jam_masuk INTO @jam_masuk 
+    FROM Riwayat_Absensi 
+    WHERE id_anggota = p_id_anggota 
+    AND tanggal = CURDATE() 
+    LIMIT 1;
+
+    -- 2. Cek Apakah Sudah Lapor Hari Ini (1 = Sudah, 0 = Belum)
+    SELECT COUNT(*) INTO @sudah_lapor 
+    FROM Laporan_Harian 
+    WHERE id_anggota = p_id_anggota 
+    AND tanggal_laporan = CURDATE();
+
+    -- Outputkan hasilnya
+    SELECT 
+        COALESCE(@jam_masuk, NULL) AS jam_masuk,
+        @sudah_lapor AS status_lapor;
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `sp_dashboard_bph` ()   BEGIN
+    -- 1. Hitung Total Anggota Aktif
+    SELECT COUNT(*) INTO @total_anggota FROM Anggota WHERE status_aktif = 1;
+
+    -- 2. Hitung Hadir Hari Ini
+    SELECT COUNT(*) INTO @hadir_hari_ini FROM Riwayat_Absensi 
+    WHERE tanggal = CURDATE() AND status_kehadiran = 'HADIR';
+
+    -- 3. Hitung Dinas Hari Ini (BARU DITAMBAHKAN)
+    -- Menggunakan LIKE 'DINAS%' agar menangkap 'DINAS', 'DINAS_LUAR', dll
+    SELECT COUNT(*) INTO @dinas_hari_ini FROM Riwayat_Absensi 
+    WHERE tanggal = CURDATE() AND status_kehadiran LIKE 'DINAS%';
+
+    -- 4. Hitung Laporan Masuk Hari Ini
+    SELECT COUNT(*) INTO @laporan_masuk FROM Laporan_Harian 
+    WHERE tanggal_laporan = CURDATE();
+
+    -- 5. Hitung Saldo Kas Bulan Ini
+    SELECT COALESCE(SUM(sisa_saldo), 0) INTO @saldo_kas FROM Periode_Keuangan 
+    WHERE bulan = MONTH(CURDATE()) AND tahun = YEAR(CURDATE());
+
+    -- Outputkan hasilnya (Tambahkan dinas_hari_ini)
+    SELECT 
+        @total_anggota AS total_anggota,
+        @hadir_hari_ini AS hadir_hari_ini,
+        @dinas_hari_ini AS dinas_hari_ini,
+        @laporan_masuk AS laporan_masuk,
+        @saldo_kas AS saldo_kas;
+END$$
+
 CREATE DEFINER=`root`@`%` PROCEDURE `sp_login_anggota` (IN `p_username` VARCHAR(50))   BEGIN
     -- Ambil data anggota + nama jabatan + nama divisi
     SELECT 
@@ -119,11 +169,11 @@ INSERT INTO `Divisi` (`id`, `nama_divisi`, `kode_divisi`, `deskripsi`, `dibuat_p
 
 CREATE TABLE `failed_jobs` (
   `id` bigint UNSIGNED NOT NULL,
-  `uuid` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `connection` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `queue` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
-  `exception` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `uuid` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `connection` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `queue` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `exception` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `failed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -175,6 +225,21 @@ CREATE TABLE `Laporan_Harian` (
   `dibuat_pada` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+--
+-- Dumping data untuk tabel `Laporan_Harian`
+--
+
+INSERT INTO `Laporan_Harian` (`id`, `id_divisi`, `id_anggota`, `id_program_kerja`, `tanggal_laporan`, `judul_kegiatan`, `isi_laporan`, `url_lampiran`, `status_laporan`, `dibuat_pada`) VALUES
+(1, 1, 4, NULL, '2026-01-14', 'Konsolidasi Internal Organisasi', 'Melakukan rapat rutin dengan pengurus PUK di kawasan KIIC.', NULL, 'DISUBMIT', '2026-01-14 08:17:40'),
+(2, 1, 4, NULL, '2026-01-14', 'Verifikasi Anggota Baru', 'Mengecek data pendaftaran anggota baru via aplikasi.', NULL, 'DISUBMIT', '2026-01-14 08:17:40'),
+(3, 2, 5, NULL, '2026-01-14', 'Pendampingan Kasus PHK', 'Melakukan mediasi tripartit di Disnaker Karawang.', NULL, 'DISUBMIT', '2026-01-14 08:17:40'),
+(4, 2, 5, NULL, '2026-01-14', 'Kajian UU Cipta Kerja', 'Membedah pasal-pasal krusial untuk bahan advokasi.', NULL, 'DRAFT', '2026-01-14 08:17:40'),
+(5, 3, 6, NULL, '2026-01-14', 'Persiapan Diklat Paralegal', 'Menghubungi pemateri dan booking tempat.', NULL, 'DISUBMIT', '2026-01-14 08:17:40'),
+(6, 3, 6, NULL, '2026-01-14', 'Training Leadership', 'Sesi 1 materi kepemimpinan dasar.', NULL, 'DISUBMIT', '2026-01-14 08:17:40'),
+(7, 3, 6, NULL, '2026-01-14', 'Evaluasi Peserta', 'Rekap nilai pre-test peserta diklat.', NULL, 'DISUBMIT', '2026-01-14 08:17:40'),
+(8, 2, 5, NULL, '2026-01-13', 'Meeting Mingguan Advokasi', 'Evaluasi kasus berjalan minggu ini.', NULL, 'DISUBMIT', '2026-01-14 08:17:40'),
+(9, 2, 5, NULL, '2026-01-12', 'Kunjungan ke PUK Toyota', 'Sosialisasi program bantuan hukum.', NULL, 'DISUBMIT', '2026-01-14 08:17:40');
+
 -- --------------------------------------------------------
 
 --
@@ -200,7 +265,7 @@ CREATE TABLE `Log_Audit` (
 
 CREATE TABLE `migrations` (
   `id` int UNSIGNED NOT NULL,
-  `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `migration` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -222,8 +287,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 --
 
 CREATE TABLE `password_reset_tokens` (
-  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `token` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -269,7 +334,18 @@ CREATE TABLE `Periode_Keuangan` (
   `status_dokumen` enum('DRAFT','DISUBMIT','DIKUNCI') DEFAULT 'DRAFT',
   `dibuat_pada` datetime DEFAULT CURRENT_TIMESTAMP,
   `diupdate_pada` datetime DEFAULT NULL
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data untuk tabel `Periode_Keuangan`
+--
+
+INSERT INTO `Periode_Keuangan` (`id`, `id_divisi`, `bulan`, `tahun`, `id_penanggung_jawab`, `saldo_awal`, `dana_masuk`, `total_dana_tersedia`, `total_pengeluaran`, `sisa_saldo`, `status_dokumen`, `dibuat_pada`, `diupdate_pada`) VALUES
+(1, 1, 1, 2026, NULL, 25000000.00, 0.00, 0.00, 5000000.00, 20000000.00, 'DISUBMIT', '2026-01-14 08:17:40', NULL),
+(2, 2, 1, 2026, NULL, 15000000.00, 0.00, 0.00, 7500000.00, 7500000.00, 'DISUBMIT', '2026-01-14 08:17:40', NULL),
+(3, 3, 1, 2026, NULL, 10000000.00, 0.00, 0.00, 2000000.00, 8000000.00, 'DISUBMIT', '2026-01-14 08:17:40', NULL),
+(4, 4, 1, 2026, NULL, 50000000.00, 0.00, 0.00, 1000000.00, 49000000.00, 'DISUBMIT', '2026-01-14 08:17:40', NULL),
+(5, 5, 1, 2026, NULL, 5000000.00, 0.00, 0.00, 4500000.00, 500000.00, 'DISUBMIT', '2026-01-14 08:17:40', NULL);
 
 -- --------------------------------------------------------
 
@@ -279,11 +355,11 @@ CREATE TABLE `Periode_Keuangan` (
 
 CREATE TABLE `personal_access_tokens` (
   `id` bigint UNSIGNED NOT NULL,
-  `tokenable_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tokenable_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `tokenable_id` bigint UNSIGNED NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `token` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `abilities` text COLLATE utf8mb4_unicode_ci,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `abilities` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `last_used_at` timestamp NULL DEFAULT NULL,
   `expires_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -308,7 +384,7 @@ CREATE TABLE `Program_Kerja` (
   `persen_progress` tinyint DEFAULT '0',
   `dibuat_pada` datetime DEFAULT CURRENT_TIMESTAMP,
   `dibuat_oleh` int DEFAULT NULL
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -327,6 +403,22 @@ CREATE TABLE `Riwayat_Absensi` (
   `keterangan_tambahan` varchar(255) DEFAULT NULL,
   `dibuat_pada` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data untuk tabel `Riwayat_Absensi`
+--
+
+INSERT INTO `Riwayat_Absensi` (`id`, `id_anggota`, `tanggal`, `jam_masuk`, `jam_pulang`, `status_kehadiran`, `sumber_absensi`, `keterangan_tambahan`, `dibuat_pada`) VALUES
+(1, 1, '2026-01-14', '07:55:00', NULL, 'HADIR', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
+(2, 2, '2026-01-14', '08:05:00', NULL, 'HADIR', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
+(3, 4, '2026-01-14', '07:45:00', NULL, 'HADIR', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
+(4, 5, '2026-01-14', '08:10:00', NULL, 'HADIR', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
+(5, 6, '2026-01-14', NULL, NULL, 'DINAS', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
+(6, 7, '2026-01-14', NULL, NULL, 'SAKIT', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
+(7, 8, '2026-01-14', NULL, NULL, 'IZIN', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
+(8, 5, '2026-01-13', '07:50:00', '17:05:00', 'HADIR', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
+(9, 5, '2026-01-12', '08:00:00', '17:10:00', 'HADIR', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
+(10, 5, '2026-01-11', NULL, NULL, 'DINAS', 'QR_DINDING', NULL, '2026-01-14 08:17:40');
 
 -- --------------------------------------------------------
 
@@ -381,11 +473,11 @@ CREATE TABLE `Transaksi_Pengeluaran` (
 
 CREATE TABLE `users` (
   `id` bigint UNSIGNED NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `email_verified_at` timestamp NULL DEFAULT NULL,
-  `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `remember_token` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `remember_token` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -547,7 +639,7 @@ ALTER TABLE `Jabatan`
 -- AUTO_INCREMENT untuk tabel `Laporan_Harian`
 --
 ALTER TABLE `Laporan_Harian`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT untuk tabel `Log_Audit`
@@ -571,7 +663,7 @@ ALTER TABLE `Pengajuan_Absensi`
 -- AUTO_INCREMENT untuk tabel `Periode_Keuangan`
 --
 ALTER TABLE `Periode_Keuangan`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT untuk tabel `personal_access_tokens`
@@ -589,7 +681,7 @@ ALTER TABLE `Program_Kerja`
 -- AUTO_INCREMENT untuk tabel `Riwayat_Absensi`
 --
 ALTER TABLE `Riwayat_Absensi`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT untuk tabel `Transaksi_Pengeluaran`
