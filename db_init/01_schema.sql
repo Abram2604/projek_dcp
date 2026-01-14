@@ -3,11 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: db:3306
-<<<<<<< HEAD
 -- Waktu pembuatan: 14 Jan 2026 pada 06.07
-=======
--- Waktu pembuatan: 14 Jan 2026 pada 08.47
->>>>>>> 1ec28bc42f28774831864340fab59a6fb9631a0b
 -- Versi server: 8.0.44
 -- Versi PHP: 8.3.26
 
@@ -29,7 +25,6 @@ DELIMITER $$
 --
 -- Prosedur
 --
-<<<<<<< HEAD
 CREATE DEFINER=`root`@`%` PROCEDURE `sp_login_anggota` (IN `p_username` VARCHAR(50))   BEGIN
     -- Ambil data anggota + nama jabatan + nama divisi
     SELECT 
@@ -150,178 +145,6 @@ CREATE TABLE `Jabatan` (
 -- Dumping data untuk tabel `Jabatan`
 --
 
-=======
-CREATE DEFINER=`root`@`%` PROCEDURE `sp_dashboard_anggota` (IN `p_id_anggota` INT)   BEGIN
-    -- 1. Cek Jam Masuk Hari Ini
-    SELECT jam_masuk INTO @jam_masuk 
-    FROM Riwayat_Absensi 
-    WHERE id_anggota = p_id_anggota 
-    AND tanggal = CURDATE() 
-    LIMIT 1;
-
-    -- 2. Cek Apakah Sudah Lapor Hari Ini (1 = Sudah, 0 = Belum)
-    SELECT COUNT(*) INTO @sudah_lapor 
-    FROM Laporan_Harian 
-    WHERE id_anggota = p_id_anggota 
-    AND tanggal_laporan = CURDATE();
-
-    -- Outputkan hasilnya
-    SELECT 
-        COALESCE(@jam_masuk, NULL) AS jam_masuk,
-        @sudah_lapor AS status_lapor;
-END$$
-
-CREATE DEFINER=`root`@`%` PROCEDURE `sp_dashboard_bph` ()   BEGIN
-    -- 1. Hitung Total Anggota Aktif
-    SELECT COUNT(*) INTO @total_anggota FROM Anggota WHERE status_aktif = 1;
-
-    -- 2. Hitung Hadir Hari Ini
-    SELECT COUNT(*) INTO @hadir_hari_ini FROM Riwayat_Absensi 
-    WHERE tanggal = CURDATE() AND status_kehadiran = 'HADIR';
-
-    -- 3. Hitung Dinas Hari Ini (BARU DITAMBAHKAN)
-    -- Menggunakan LIKE 'DINAS%' agar menangkap 'DINAS', 'DINAS_LUAR', dll
-    SELECT COUNT(*) INTO @dinas_hari_ini FROM Riwayat_Absensi 
-    WHERE tanggal = CURDATE() AND status_kehadiran LIKE 'DINAS%';
-
-    -- 4. Hitung Laporan Masuk Hari Ini
-    SELECT COUNT(*) INTO @laporan_masuk FROM Laporan_Harian 
-    WHERE tanggal_laporan = CURDATE();
-
-    -- 5. Hitung Saldo Kas Bulan Ini
-    SELECT COALESCE(SUM(sisa_saldo), 0) INTO @saldo_kas FROM Periode_Keuangan 
-    WHERE bulan = MONTH(CURDATE()) AND tahun = YEAR(CURDATE());
-
-    -- Outputkan hasilnya (Tambahkan dinas_hari_ini)
-    SELECT 
-        @total_anggota AS total_anggota,
-        @hadir_hari_ini AS hadir_hari_ini,
-        @dinas_hari_ini AS dinas_hari_ini,
-        @laporan_masuk AS laporan_masuk,
-        @saldo_kas AS saldo_kas;
-END$$
-
-CREATE DEFINER=`root`@`%` PROCEDURE `sp_login_anggota` (IN `p_username` VARCHAR(50))   BEGIN
-    -- Ambil data anggota + nama jabatan + nama divisi
-    SELECT 
-        a.id,
-        a.nama_lengkap,
-        a.username,
-        a.password_hash,
-        a.email,
-        a.status_aktif,
-        j.nama_jabatan,
-        j.level_akses,  -- PENTING: Untuk Sidebar (BPH/ANGGOTA)
-        d.nama_divisi
-    FROM Anggota a
-    LEFT JOIN Jabatan j ON a.id_jabatan = j.id
-    LEFT JOIN Divisi d ON a.id_divisi = d.id
-    WHERE a.username = p_username 
-    AND a.status_aktif = 1
-    LIMIT 1;
-END$$
-
-DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `Anggota`
---
-
-CREATE TABLE `Anggota` (
-  `id` int NOT NULL,
-  `nama_lengkap` varchar(150) NOT NULL,
-  `username` varchar(50) NOT NULL,
-  `password_hash` varchar(255) NOT NULL,
-  `email` varchar(100) DEFAULT NULL,
-  `remember_token` varchar(100) DEFAULT NULL,
-  `nomor_hp` varchar(20) DEFAULT NULL,
-  `id_divisi` int DEFAULT NULL,
-  `id_jabatan` int DEFAULT NULL,
-  `string_kode_qr` varchar(100) DEFAULT NULL,
-  `foto_profil` varchar(255) DEFAULT NULL,
-  `status_aktif` tinyint(1) DEFAULT '1',
-  `terakhir_login` datetime DEFAULT NULL,
-  `dibuat_pada` datetime DEFAULT CURRENT_TIMESTAMP,
-  `diupdate_pada` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data untuk tabel `Anggota`
---
-
-INSERT INTO `Anggota` (`id`, `nama_lengkap`, `username`, `password_hash`, `email`, `remember_token`, `nomor_hp`, `id_divisi`, `id_jabatan`, `string_kode_qr`, `foto_profil`, `status_aktif`, `terakhir_login`, `dibuat_pada`, `diupdate_pada`) VALUES
-(1, 'Bapak Ketua', 'ketua', '$2y$12$a4A1CG.OGgyD7c4NnYipnuTMj0gIjtVk.NNKsq2IhxyPPKFlS.B7C', 'ketua@spsi.com', NULL, NULL, NULL, 1, NULL, NULL, 1, NULL, '2026-01-14 01:46:47', '2026-01-14 03:42:40'),
-(2, 'Ibu Sekretaris', 'sekretaris', '$2y$12$eoRr7ISrGooHvuGvs/gAFujPayZ.0XZD3HxuivzQwL5f2xJonpTtC', 'sekre@spsi.com', NULL, NULL, NULL, 2, NULL, NULL, 1, NULL, '2026-01-14 01:46:47', '2026-01-14 03:42:40'),
-(3, 'Ibu Bendahara', 'bendahara', '$2y$12$Qd5c/XSWIcaS4e/hqP8Ps.XwIbwlo71ETvuyAhFegJRhEVPU0sbK2', 'bendahara@spsi.com', NULL, NULL, NULL, 3, NULL, NULL, 1, NULL, '2026-01-14 01:46:47', '2026-01-14 03:42:40'),
-(4, 'Admin Organisasi', 'organisasi', '$2y$12$SICJpdLYS5MdUhj3TlcV8eqLwXJEuZHmlNI6GHCY4bAbuqpQ9QQO2', 'org@spsi.com', NULL, NULL, 1, 4, NULL, NULL, 1, NULL, '2026-01-14 01:46:47', '2026-01-14 03:42:40'),
-(5, 'Admin Advokasi', 'advokasi', '$2y$12$.SaxNC1tJs8Kwj2w60UoYekBXTXKsxqrXu8OJo5np90eSVJtZ3alS', 'adv@spsi.com', NULL, NULL, 2, 5, NULL, NULL, 1, NULL, '2026-01-14 01:46:47', '2026-01-14 03:42:41'),
-(6, 'Admin PSDM', 'psdm', '$2y$12$vtYFpUhHxNPZt5zINy.5WePpEWh96vzAvCV0UCmXoYrMMDXEJYUhW', 'psdm@spsi.com', NULL, NULL, 3, 6, NULL, NULL, 1, NULL, '2026-01-14 01:46:47', '2026-01-14 03:42:41'),
-(7, 'Admin Ekonomi', 'ekonomi', '$2y$12$1xDGIohCPwZo0hOCwSf5MucG0jVN0VgdInZDURejThUAXEYgGpuWm', 'eko@spsi.com', NULL, NULL, 4, 7, NULL, NULL, 1, NULL, '2026-01-14 01:46:47', '2026-01-14 03:42:41'),
-(8, 'Admin Publikasi', 'publikasi', '$2y$12$z4SOdbTz13dbjx6T3d3VdesXEPxOAGU9uIqi8oNcShzlq8BI6xwHW', 'pub@spsi.com', NULL, NULL, 5, 8, NULL, NULL, 1, NULL, '2026-01-14 01:46:47', '2026-01-14 03:42:41'),
-(9, 'Anggota Contoh', 'anggota', '$2y$12$V.o3Mubu0ly9Bqi8igozZemmytF/9TXno4WhoSFPrFpgrJEqVofwG', 'user@spsi.com', NULL, NULL, 1, 9, NULL, NULL, 1, NULL, '2026-01-14 01:46:47', '2026-01-14 03:42:41');
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `Divisi`
---
-
-CREATE TABLE `Divisi` (
-  `id` int NOT NULL,
-  `nama_divisi` varchar(100) NOT NULL,
-  `kode_divisi` varchar(10) DEFAULT NULL,
-  `deskripsi` varchar(255) DEFAULT NULL,
-  `dibuat_pada` datetime DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data untuk tabel `Divisi`
---
-
-INSERT INTO `Divisi` (`id`, `nama_divisi`, `kode_divisi`, `deskripsi`, `dibuat_pada`) VALUES
-(1, 'Bidang Organisasi', 'ORG', 'Mengurus keanggotaan dan internal', '2026-01-14 01:46:47'),
-(2, 'Bidang Advokasi', 'ADV', 'Hukum dan pembelaan anggota', '2026-01-14 01:46:47'),
-(3, 'Bidang PSDM', 'PSDM', 'Pengembangan Sumber Daya Manusia & Diklat', '2026-01-14 01:46:47'),
-(4, 'Bidang Kesejahteraan', 'KES', 'Ekonomi dan sosial', '2026-01-14 01:46:47'),
-(5, 'Bidang Publikasi & Hubungan', 'PUB', 'Humas dan Media', '2026-01-14 01:46:47');
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `failed_jobs`
---
-
-CREATE TABLE `failed_jobs` (
-  `id` bigint UNSIGNED NOT NULL,
-  `uuid` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `connection` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `queue` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `exception` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `failed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `Jabatan`
---
-
-CREATE TABLE `Jabatan` (
-  `id` int NOT NULL,
-  `nama_jabatan` varchar(100) NOT NULL,
-  `id_divisi` int DEFAULT NULL,
-  `level_akses` enum('BPH','KORBID','ANGGOTA') NOT NULL DEFAULT 'ANGGOTA',
-  `dibuat_pada` datetime DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data untuk tabel `Jabatan`
---
-
->>>>>>> 1ec28bc42f28774831864340fab59a6fb9631a0b
 INSERT INTO `Jabatan` (`id`, `nama_jabatan`, `id_divisi`, `level_akses`, `dibuat_pada`) VALUES
 (1, 'Ketua DPC', NULL, 'BPH', '2026-01-14 01:46:47'),
 (2, 'Sekretaris', NULL, 'BPH', '2026-01-14 01:46:47'),
@@ -352,24 +175,6 @@ CREATE TABLE `Laporan_Harian` (
   `dibuat_pada` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-<<<<<<< HEAD
-=======
---
--- Dumping data untuk tabel `Laporan_Harian`
---
-
-INSERT INTO `Laporan_Harian` (`id`, `id_divisi`, `id_anggota`, `id_program_kerja`, `tanggal_laporan`, `judul_kegiatan`, `isi_laporan`, `url_lampiran`, `status_laporan`, `dibuat_pada`) VALUES
-(1, 1, 4, NULL, '2026-01-14', 'Konsolidasi Internal Organisasi', 'Melakukan rapat rutin dengan pengurus PUK di kawasan KIIC.', NULL, 'DISUBMIT', '2026-01-14 08:17:40'),
-(2, 1, 4, NULL, '2026-01-14', 'Verifikasi Anggota Baru', 'Mengecek data pendaftaran anggota baru via aplikasi.', NULL, 'DISUBMIT', '2026-01-14 08:17:40'),
-(3, 2, 5, NULL, '2026-01-14', 'Pendampingan Kasus PHK', 'Melakukan mediasi tripartit di Disnaker Karawang.', NULL, 'DISUBMIT', '2026-01-14 08:17:40'),
-(4, 2, 5, NULL, '2026-01-14', 'Kajian UU Cipta Kerja', 'Membedah pasal-pasal krusial untuk bahan advokasi.', NULL, 'DRAFT', '2026-01-14 08:17:40'),
-(5, 3, 6, NULL, '2026-01-14', 'Persiapan Diklat Paralegal', 'Menghubungi pemateri dan booking tempat.', NULL, 'DISUBMIT', '2026-01-14 08:17:40'),
-(6, 3, 6, NULL, '2026-01-14', 'Training Leadership', 'Sesi 1 materi kepemimpinan dasar.', NULL, 'DISUBMIT', '2026-01-14 08:17:40'),
-(7, 3, 6, NULL, '2026-01-14', 'Evaluasi Peserta', 'Rekap nilai pre-test peserta diklat.', NULL, 'DISUBMIT', '2026-01-14 08:17:40'),
-(8, 2, 5, NULL, '2026-01-13', 'Meeting Mingguan Advokasi', 'Evaluasi kasus berjalan minggu ini.', NULL, 'DISUBMIT', '2026-01-14 08:17:40'),
-(9, 2, 5, NULL, '2026-01-12', 'Kunjungan ke PUK Toyota', 'Sosialisasi program bantuan hukum.', NULL, 'DISUBMIT', '2026-01-14 08:17:40');
-
->>>>>>> 1ec28bc42f28774831864340fab59a6fb9631a0b
 -- --------------------------------------------------------
 
 --
@@ -395,11 +200,7 @@ CREATE TABLE `Log_Audit` (
 
 CREATE TABLE `migrations` (
   `id` int UNSIGNED NOT NULL,
-<<<<<<< HEAD
   `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-=======
-  `migration` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
->>>>>>> 1ec28bc42f28774831864340fab59a6fb9631a0b
   `batch` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -421,13 +222,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 --
 
 CREATE TABLE `password_reset_tokens` (
-<<<<<<< HEAD
   `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `token` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-=======
-  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
->>>>>>> 1ec28bc42f28774831864340fab59a6fb9631a0b
   `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -473,22 +269,7 @@ CREATE TABLE `Periode_Keuangan` (
   `status_dokumen` enum('DRAFT','DISUBMIT','DIKUNCI') DEFAULT 'DRAFT',
   `dibuat_pada` datetime DEFAULT CURRENT_TIMESTAMP,
   `diupdate_pada` datetime DEFAULT NULL
-<<<<<<< HEAD
 ) ;
-=======
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data untuk tabel `Periode_Keuangan`
---
-
-INSERT INTO `Periode_Keuangan` (`id`, `id_divisi`, `bulan`, `tahun`, `id_penanggung_jawab`, `saldo_awal`, `dana_masuk`, `total_dana_tersedia`, `total_pengeluaran`, `sisa_saldo`, `status_dokumen`, `dibuat_pada`, `diupdate_pada`) VALUES
-(1, 1, 1, 2026, NULL, 25000000.00, 0.00, 0.00, 5000000.00, 20000000.00, 'DISUBMIT', '2026-01-14 08:17:40', NULL),
-(2, 2, 1, 2026, NULL, 15000000.00, 0.00, 0.00, 7500000.00, 7500000.00, 'DISUBMIT', '2026-01-14 08:17:40', NULL),
-(3, 3, 1, 2026, NULL, 10000000.00, 0.00, 0.00, 2000000.00, 8000000.00, 'DISUBMIT', '2026-01-14 08:17:40', NULL),
-(4, 4, 1, 2026, NULL, 50000000.00, 0.00, 0.00, 1000000.00, 49000000.00, 'DISUBMIT', '2026-01-14 08:17:40', NULL),
-(5, 5, 1, 2026, NULL, 5000000.00, 0.00, 0.00, 4500000.00, 500000.00, 'DISUBMIT', '2026-01-14 08:17:40', NULL);
->>>>>>> 1ec28bc42f28774831864340fab59a6fb9631a0b
 
 -- --------------------------------------------------------
 
@@ -498,19 +279,11 @@ INSERT INTO `Periode_Keuangan` (`id`, `id_divisi`, `bulan`, `tahun`, `id_penangg
 
 CREATE TABLE `personal_access_tokens` (
   `id` bigint UNSIGNED NOT NULL,
-<<<<<<< HEAD
   `tokenable_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `tokenable_id` bigint UNSIGNED NOT NULL,
   `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `token` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
   `abilities` text COLLATE utf8mb4_unicode_ci,
-=======
-  `tokenable_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `tokenable_id` bigint UNSIGNED NOT NULL,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `token` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `abilities` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
->>>>>>> 1ec28bc42f28774831864340fab59a6fb9631a0b
   `last_used_at` timestamp NULL DEFAULT NULL,
   `expires_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -535,11 +308,7 @@ CREATE TABLE `Program_Kerja` (
   `persen_progress` tinyint DEFAULT '0',
   `dibuat_pada` datetime DEFAULT CURRENT_TIMESTAMP,
   `dibuat_oleh` int DEFAULT NULL
-<<<<<<< HEAD
 ) ;
-=======
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
->>>>>>> 1ec28bc42f28774831864340fab59a6fb9631a0b
 
 -- --------------------------------------------------------
 
@@ -559,25 +328,6 @@ CREATE TABLE `Riwayat_Absensi` (
   `dibuat_pada` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-<<<<<<< HEAD
-=======
---
--- Dumping data untuk tabel `Riwayat_Absensi`
---
-
-INSERT INTO `Riwayat_Absensi` (`id`, `id_anggota`, `tanggal`, `jam_masuk`, `jam_pulang`, `status_kehadiran`, `sumber_absensi`, `keterangan_tambahan`, `dibuat_pada`) VALUES
-(1, 1, '2026-01-14', '07:55:00', NULL, 'HADIR', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
-(2, 2, '2026-01-14', '08:05:00', NULL, 'HADIR', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
-(3, 4, '2026-01-14', '07:45:00', NULL, 'HADIR', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
-(4, 5, '2026-01-14', '08:10:00', NULL, 'HADIR', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
-(5, 6, '2026-01-14', NULL, NULL, 'DINAS', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
-(6, 7, '2026-01-14', NULL, NULL, 'SAKIT', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
-(7, 8, '2026-01-14', NULL, NULL, 'IZIN', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
-(8, 5, '2026-01-13', '07:50:00', '17:05:00', 'HADIR', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
-(9, 5, '2026-01-12', '08:00:00', '17:10:00', 'HADIR', 'QR_DINDING', NULL, '2026-01-14 08:17:40'),
-(10, 5, '2026-01-11', NULL, NULL, 'DINAS', 'QR_DINDING', NULL, '2026-01-14 08:17:40');
-
->>>>>>> 1ec28bc42f28774831864340fab59a6fb9631a0b
 -- --------------------------------------------------------
 
 --
@@ -631,19 +381,11 @@ CREATE TABLE `Transaksi_Pengeluaran` (
 
 CREATE TABLE `users` (
   `id` bigint UNSIGNED NOT NULL,
-<<<<<<< HEAD
   `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `remember_token` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-=======
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email_verified_at` timestamp NULL DEFAULT NULL,
-  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `remember_token` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
->>>>>>> 1ec28bc42f28774831864340fab59a6fb9631a0b
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -805,11 +547,7 @@ ALTER TABLE `Jabatan`
 -- AUTO_INCREMENT untuk tabel `Laporan_Harian`
 --
 ALTER TABLE `Laporan_Harian`
-<<<<<<< HEAD
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
-=======
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
->>>>>>> 1ec28bc42f28774831864340fab59a6fb9631a0b
 
 --
 -- AUTO_INCREMENT untuk tabel `Log_Audit`
@@ -833,11 +571,7 @@ ALTER TABLE `Pengajuan_Absensi`
 -- AUTO_INCREMENT untuk tabel `Periode_Keuangan`
 --
 ALTER TABLE `Periode_Keuangan`
-<<<<<<< HEAD
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
-=======
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
->>>>>>> 1ec28bc42f28774831864340fab59a6fb9631a0b
 
 --
 -- AUTO_INCREMENT untuk tabel `personal_access_tokens`
@@ -855,11 +589,7 @@ ALTER TABLE `Program_Kerja`
 -- AUTO_INCREMENT untuk tabel `Riwayat_Absensi`
 --
 ALTER TABLE `Riwayat_Absensi`
-<<<<<<< HEAD
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
-=======
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
->>>>>>> 1ec28bc42f28774831864340fab59a6fb9631a0b
 
 --
 -- AUTO_INCREMENT untuk tabel `Transaksi_Pengeluaran`
