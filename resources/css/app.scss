@@ -257,37 +257,74 @@ $indigo-200: #c7d2fe;
 
 // Mobile Responsiveness
 @media (max-width: 991.98px) {
-    .sidebar-wrapper {
-        transform: translateX(-100%); // Sembunyikan ke kiri
-        transition: transform 0.3s ease-in-out;
-    }
-    .main-content {
-        margin-left: 0;
-    }
     
-    body.sidebar-open .sidebar-wrapper {
-        transform: translateX(0);
+    /* 1. Sidebar Sembunyi ke Kiri */
+    .sidebar-wrapper {
+        transform: translateX(-100%);
+        width: 280px;
+        /* TAMBAHAN PENTING: Z-Index harus paling tinggi (di atas overlay) */
+        z-index: 2000 !important; 
     }
 
-    // Class toggler untuk menampilkan sidebar di mobile
-    .sidebar-toggled .sidebar-wrapper {
-        margin-left: 0;
+    /* 2. Konten Utama Full Width */
+    .main-content {
+        margin-left: 0 !important; /* Hapus margin kiri */
+        padding: 20px 15px; /* Padding lebih kecil untuk HP */
+    }
+
+    /* 3. Tampilkan Tombol Toggle */
+    #sidebarToggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        background: white;
+        color: #1e1b4b;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        font-size: 20px;
+        transition: 0.2s;
     }
     
-    // Overlay saat sidebar muncul di mobile
+    #sidebarToggle:active {
+        background: #f3f4f6;
+        transform: scale(0.95);
+    }
+
+    /* 4. SAAT SIDEBAR DIBUKA (Class ditambahkan via JS) */
+    body.sidebar-toggled {
+        overflow: hidden; /* Matikan scroll body saat menu buka */
+    }
+
+    body.sidebar-toggled .sidebar-wrapper {
+        transform: translateX(0); /* Munculkan Sidebar */
+        box-shadow: 5px 0 30px rgba(0,0,0,0.5); /* Bayangan tebal */
+    }
+
+    /* 5. OVERLAY HITAM (Latar belakang gelap) */
     .sidebar-overlay {
+        display: none; /* Default mati */
         position: fixed;
         top: 0;
         left: 0;
         width: 100vw;
         height: 100vh;
-        background: rgba(0,0,0,0.5);
-        z-index: 999;
-        display: none;
+        background: rgba(0, 0, 0, 0.6); /* Hitam transparan */
+        z-index: 1040; /* Di bawah sidebar, di atas konten */
+        backdrop-filter: blur(2px); /* Efek blur estetik */
     }
-    .sidebar-toggled .sidebar-overlay {
-        display: block;
+
+    body.sidebar-toggled .sidebar-overlay {
+        display: block; /* Nyala saat menu buka */
+        animation: fadeIn 0.3s;
     }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .login-page {

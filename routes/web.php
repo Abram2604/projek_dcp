@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 
 // 1. Route Login & Logout
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -13,7 +14,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/', function () { return redirect('/dashboard'); });
     
     // Perbaikan nama view (Hapus .index)
-    Route::get('/dashboard', function () { return view('dashboard.index'); })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/absensi', function () { return view('absensi.index'); });
     Route::get('/laporan', function () { return view('laporan.index'); });
     Route::get('/progja', function () { return view('progja.index'); });
