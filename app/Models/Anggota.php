@@ -10,35 +10,48 @@ class Anggota extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    // Arahkan ke nama tabel yang benar di database Anda
     protected $table = 'Anggota';
-    
-    // Tentukan Primary Key
     protected $primaryKey = 'id';
     
-    // Matikan timestamp default (created_at/updated_at)
-    // dan arahkan ke kolom timestamp custom Anda
+    // --- SOLUSI 1: KONFIGURASI TIMESTAMP ---
+    // Beritahu Laravel nama kolom yang benar
     const CREATED_AT = 'dibuat_pada';
-    const UPDATED_AT = 'diupdate_pada';
+    const UPDATED_AT = 'diupdate_pada'; 
 
-    // Kolom yang boleh diisi (Mass Assignment)
+    // --- SOLUSI 2: MATIKAN UPDATE OTOMATIS SAAT LOGIN ---
+    // Ini mencegah error jika kolom 'remember_token' tidak ada di database
+    public $timestamps = false; // Matikan timestamp otomatis sementara agar aman
+    
     protected $fillable = [
         'username',
         'password_hash',
         'nama_lengkap',
         'id_divisi',
-        'email',       // Dipakai buat nyimpen role sementara
+        'id_jabatan',
+        'email',
         'status_aktif'
     ];
 
-    // Sembunyikan password saat data diambil
     protected $hidden = [
         'password_hash',
+        'remember_token',
     ];
 
-    // OVERRIDE: Beritahu Laravel kalau kolom password kita namanya 'password_hash'
+    // Override Password Name
     public function getAuthPassword()
     {
         return $this->password_hash;
+    }
+
+    // --- SOLUSI 3: MATIKAN REMEMBER TOKEN ---
+    // Agar Laravel tidak mencoba menulis ke kolom 'remember_token' yang mungkin error
+    public function getRememberTokenName()
+    {
+        return null; // Disable remember token
+    }
+
+    public function setRememberToken($value)
+    {
+        // Do nothing (Jangan simpan apa-apa)
     }
 }

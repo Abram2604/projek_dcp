@@ -32,124 +32,207 @@ body {
 $indigo-900: #312e81;
 $indigo-800: #3730a3;
 $indigo-700: #4338ca;
+$indigo-400: #818cf8;
 $indigo-300: #a5b4fc;
 $indigo-200: #c7d2fe;
 
 .sidebar-wrapper {
-    width: $sidebar-width;
+    // Layout Dasar (w-64 flex flex-col bg-indigo-900)
+    width: 280px; 
+    height: 100vh;
     background-color: $indigo-900;
-    min-height: 100vh;
-    display: flex;          // Flexbox untuk layout atas-bawah
-    flex-direction: column; // Susunan vertikal
+    color: white;
+    display: flex;
+    flex-direction: column;
     position: fixed;
     top: 0;
     left: 0;
     z-index: 1000;
-    transition: margin 0.25s ease-out;
+    font-family: 'Inter', sans-serif;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
 
-    // A. Bagian Header Logo
-    .sidebar-brand {
-        padding: 1.5rem;
+    // 1. HEADER (p-6 flex items-center gap-3)
+    .sidebar-header {
+        padding: 1.5rem; 
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 0.75rem; 
 
-        .brand-icon {
-            width: 40px;
-            height: 40px;
+        // Logo Box (w-10 h-10 bg-white rounded-lg)
+        .logo-box {
+            width: 2.5rem;  // 40px
+            height: 2.5rem; // 40px
             background-color: white;
-            border-radius: 0.5rem; // Rounded
+            border-radius: 0.5rem; // rounded-lg
             display: flex;
             align-items: center;
             justify-content: center;
             color: $indigo-900;
-            font-size: 1.2rem;
+            font-size: 1.25rem;
+            flex-shrink: 0; // Mencegah logo gepeng
+            
+            img {
+                width: 65%;
+                height: auto;
+            }
+            
+            // Jika pakai icon font
+            i { font-size: 1.2rem; }
         }
 
-        .brand-text {
-            line-height: 1.2;
-            h6 { font-weight: 700; margin: 0; color: white; font-size: 0.95rem; text-transform: uppercase; }
-            span { font-size: 0.65rem; color: $indigo-300; letter-spacing: 0.5px; }
+        .app-title {
+            line-height: 1.1;
+            
+            // h1 (text-sm font-bold)
+            h1 {
+                font-size: 0.875rem; 
+                font-weight: 700; 
+                margin: 0;
+                color: white;
+            }
+            
+            // p (text-[10px] text-indigo-300)
+            p {
+                font-size: 0.65rem; 
+                color: $indigo-300;
+                margin: 0;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
         }
     }
 
-    // B. Bagian Menu
+    // 2. MENU NAVIGASI (flex-1 px-4 py-6 space-y-1)
     .sidebar-menu {
-        padding: 0 1rem;
-        flex-grow: 1; // Mengisi ruang kosong agar footer terdorong ke bawah
-        overflow-y: auto;
+        flex: 1; // Mengisi sisa ruang
+        padding: 1.5rem 1rem; 
+        overflow-y: auto; // Scroll jika menu panjang
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem; 
 
-        .nav-link {
+        .nav-item {
+            // Base Style (w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors)
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.25rem;
-            color: $indigo-200;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
-            font-weight: 500;
+            gap: 0.75rem; 
+            padding: 0.75rem 1rem; 
+            border-radius: 0.5rem; 
+            text-decoration: none;
+            transition: all 0.2s ease-in-out;
+            font-weight: 500; 
             font-size: 0.95rem;
             border: none;
+            width: 100%;
+            text-align: left;
+            
+            // Icon Size
+            i { 
+                width: 20px; 
+                text-align: center; 
+                font-size: 1.1rem;
+            }
 
-            i { width: 20px; text-align: center; font-size: 1.1rem; }
+            // State: INACTIVE (text-indigo-200 hover:bg-indigo-800 hover:text-white)
+            color: $indigo-200;
+            background-color: transparent;
 
             &:hover {
                 background-color: $indigo-800;
                 color: white;
             }
 
+            // State: ACTIVE (bg-indigo-700 text-white shadow-lg)
             &.active {
                 background-color: $indigo-700;
                 color: white;
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             }
-        }
-
-        .nav-title {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            color: $indigo-300;
-            margin: 1.5rem 0 0.5rem 1rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            padding: 0;
         }
     }
 
-    // C. Bagian Footer Card (Informasi Divisi)
+    // 3. FOOTER (p-4 mt-auto)
     .sidebar-footer {
-        padding: 1rem;
-        margin-top: auto;
+        padding: 1rem; 
+        margin-top: auto; 
 
+        // Info Card (bg-indigo-800 rounded-xl p-4 border border-indigo-700)
         .info-card {
             background-color: $indigo-800;
-            border: 1px solid rgba($indigo-700, 0.5);
-            border-radius: 0.75rem;
-            padding: 1rem;
+            border: 1px solid $indigo-700;
+            border-radius: 0.75rem; // rounded-xl
+            padding: 1rem; 
             
-            .info-header {
+            // Header Card (flex items-center gap-3 mb-3)
+            .info-label {
                 display: flex;
                 align-items: center;
-                gap: 0.5rem;
-                margin-bottom: 0.5rem;
-                color: $indigo-300;
-                font-size: 0.75rem;
-                font-weight: 600;
-                text-transform: uppercase;
+                gap: 0.75rem;
+                margin-bottom: 0.75rem;
+                
+                // Icon (text-indigo-300)
+                i { 
+                    font-size: 1rem;
+                    color: $indigo-300; 
+                }
+                
+                // Text (text-xs font-semibold uppercase tracking-wider text-indigo-300)
+                span {
+                    font-size: 0.75rem; 
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    color: $indigo-300;
+                }
             }
 
-            .user-role { color: white; font-weight: 600; font-size: 0.9rem; margin: 0; }
-            .user-desc { color: $indigo-300; font-size: 0.75rem; margin: 0; }
+            // User Name (text-sm font-medium)
+            .user-name {
+                font-size: 0.875rem; 
+                font-weight: 500; 
+                color: white;
+                margin: 0;
+            }
+
+            // User Dept (text-xs text-indigo-400 mt-1)
+            .user-dept {
+                font-size: 0.75rem; 
+                color: $indigo-400; 
+                margin-top: 0.25rem;
+                margin-bottom: 0;
+            }
+        }
+        
+        // Tombol Logout Tambahan (Agar Rapi)
+        .logout-btn {
+            margin-top: 0.75rem;
+            width: 100%;
+            background: transparent;
+            color: $indigo-300;
+            border: 1px solid transparent;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+
+            &:hover {
+                background: rgba(0,0,0,0.2);
+                color: #ef4444; // Merah saat hover logout
+            }
         }
     }
 }
-
 // Main Content Wrapper
 .main-content {
-    margin-left: $sidebar-width;
+    margin-left: 280px; // Sesuai lebar sidebar
     padding: 2rem;
-    transition: margin 0.25s ease-out;
+    min-height: 100vh;
+    background-color: #f3f4f6; // gray-100
+    transition: margin-left 0.3s ease;
 }
 
 // Styling Card (Modern)
@@ -175,12 +258,17 @@ $indigo-200: #c7d2fe;
 // Mobile Responsiveness
 @media (max-width: 991.98px) {
     .sidebar-wrapper {
-        margin-left: - $sidebar-width;
+        transform: translateX(-100%); // Sembunyikan ke kiri
+        transition: transform 0.3s ease-in-out;
     }
     .main-content {
         margin-left: 0;
     }
     
+    body.sidebar-open .sidebar-wrapper {
+        transform: translateX(0);
+    }
+
     // Class toggler untuk menampilkan sidebar di mobile
     .sidebar-toggled .sidebar-wrapper {
         margin-left: 0;

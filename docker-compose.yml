@@ -20,6 +20,7 @@ services:
             DB_PASSWORD: root_password
             PHP_DATE_TIMEZONE: Asia/Jakarta
             WEB_DOCUMENT_ROOT: /app/public
+            TZ: Asia/Jakarta
 
     # 1. The Database Service
     db:

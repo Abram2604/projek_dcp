@@ -4,17 +4,27 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Anggota; // Pastikan Model Anggota di-import
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use App\Models\Anggota;
 
 class AuthController extends Controller
 {
-    // Menampilkan Halaman Login
+    /**
+     * Menampilkan Halaman Login
+     */
     public function showLoginForm()
     {
+        // Jika user sudah login, langsung lempar ke dashboard
+        if (Auth::check()) {
+            return redirect()->route('dashboard');
+        }
         return view('auth.login');
     }
 
-    // Proses Login (Mode Dummy / Bypass)
+    /**
+     * Proses Login Utama
+     */
     public function login(Request $request)
     {
         // 1. Validasi Input
@@ -23,57 +33,62 @@ class AuthController extends Controller
             'password' => 'required'
         ]);
 
-        // 2. DAFTAR AKUN DUMMY (Untuk Testing UI)
-        // Format: 'username' => 'Nama Jabatan'
-        $dummy_accounts = [
-            'ketua'      => 'Ketua',
-            'sekretaris' => 'Sekretaris',
-            'bendahara'  => 'Bendahara',
-            'organisasi' => 'Organisasi',
-            'advokasi'   => 'Advokasi',
-            'anggota'    => 'Anggota Biasa'
-        ];
+        try {
+            // 2. Cari User Menggunakan Eloquent
+            // Kita pakai Eloquent (Model Anggota) agar Auth::login bekerja sempurna mencatat sesi
+            $user = Anggota::where('username', $request->username)->first();
 
-        $inputUser = $request->username;
-        $inputPass = $request->password;
+            // 3. Cek Apakah User Ditemukan & Password Hash Cocok
+            // Kita pakai Hash::check karena password di database sudah di-bcrypt
+            if ($user && Hash::check($request->password, $user->password_hash)) {
+                
+                // 4. Proses Login ke Sistem Laravel
+                // Ini akan membuat File/Database Session untuk user ini
+                Auth::login($user); 
+                
+                // 5. Regenerasi ID Sesi (Wajib untuk keamanan / mencegah Fixation Attack)
+                $request->session()->regenerate();
 
-        // 3. LOGIKA LOGIN SEMENTARA (BYPASS)
-        // Jika username ada di daftar dummy DAN passwordnya '123'
-        if (array_key_exists($inputUser, $dummy_accounts) && $inputPass == '123') {
-            
-            // Cari user di database, kalau tidak ada -> Buat baru otomatis!
-            // Ini biar Session Laravel tidak error
-            $user = Anggota::firstOrCreate(
-                ['username' => $inputUser],
-                [
-                    'nama_lengkap'  => $dummy_accounts[$inputUser] . ' DPC', // Contoh: Ketua DPC
-                    'password_hash' => bcrypt('123'), // Isi formalitas aja
-                    'status_aktif'  => 1,
-                    // Kita simpan jabatannya di kolom 'email' sementara (hack) 
-                    // atau kolom lain yg kosong biar sidebar tau dia role apa
-                    'email'         => $dummy_accounts[$inputUser] 
-                ]
-            );
+                // 6. Ambil Data Tambahan (Jabatan & Divisi) secara Manual
+                // Kita ambil pakai Query Builder untuk memastikan data ada, 
+                // jaga-jaga jika relasi di Model belum dibuat.
+                $jabatan = DB::table('Jabatan')->where('id', $user->id_jabatan)->first();
+                $divisi  = DB::table('Divisi')->where('id', $user->id_divisi)->first();
 
-            // Login Paksa
-            Auth::login($user);
-            $request->session()->regenerate();
+                // 7. Simpan Hak Akses ke dalam Session
+                // Data ini akan dipakai oleh Sidebar untuk menampilkan/menyembunyikan menu
+                session([
+                    'user_jabatan' => $jabatan ? $jabatan->nama_jabatan : 'Anggota',
+                    'user_level'   => $jabatan ? $jabatan->level_akses : 'ANGGOTA', // BPH / KORBID / ANGGOTA
+                    'user_divisi'  => $divisi  ? $divisi->nama_divisi : '-',
+                ]);
 
-            return redirect()->intended('dashboard');
+                // 8. Redirect ke Dashboard
+                return redirect()->intended('dashboard');
+            }
+
+            // Jika Username tidak ada ATAU Password salah
+            return back()->withErrors([
+                'username' => 'Username atau password salah.',
+            ])->onlyInput('username');
+
+        } catch (\Exception $e) {
+            // Tangkap Error jika ada masalah koneksi database dll
+            return back()->withErrors(['username' => 'System Error: ' . $e->getMessage()]);
         }
-
-        // 4. Jika login gagal
-        return back()->withErrors([
-            'username' => 'Login Gagal. Coba user: ketua / pass: 123',
-        ]);
     }
 
-    // Proses Logout
+    /**
+     * Proses Logout
+     */
     public function logout(Request $request)
     {
         Auth::logout();
+        
+        // Hapus sesi
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        
         return redirect('/login');
     }
 }
