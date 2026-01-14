@@ -3,7 +3,7 @@
     <div class="sidebar-header">
         <div class="logo-box">
             <!-- Ganti dengan <img> jika ada logo.png, atau pakai icon -->
-            <i class="fa-solid fa-shield-halved"></i>
+            <img src="{{ asset('img/logo.png') }}" alt="Logo SPSI" style="width: 70%; height: auto;">
         </div>
         <div class="app-title">
             <h1>DPC FSP LEM</h1>
@@ -57,7 +57,7 @@
         @if($isBPH || $isOrg)
         <a href="{{ url('/users') }}" class="nav-item {{ Request::is('users*') ? 'active' : '' }}">
             <i class="fa-solid fa-users"></i>
-            <span>Manajemen User</span>
+            <span>Manajemen Anggota</span>
         </a>
         @endif
     </nav>
