@@ -43,4 +43,4 @@ Route::middleware('auth')->group(function () {
         Route::post('/users/{id}/generate-qr', [UserController::class, 'generateQr'])->name('users.generate-qr');
         Route::put('/users/{id}/activate', [UserController::class, 'activate'])->name('users.activate');
     });
-
+});
