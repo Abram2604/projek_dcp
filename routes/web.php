@@ -7,6 +7,7 @@ use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\CekAksesManajemen;
 use App\Http\Controllers\KeuanganController;
+use App\Http\Controllers\ProfileController;
 
 // 1. Route Login & Logout
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -24,6 +25,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
     Route::post('/laporan', [LaporanController::class, 'store'])->name('laporan.store');
     Route::get('/laporan/{id}', [LaporanController::class, 'show'])->name('laporan.show');
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
     
     Route::get('/progja', function () { return view('progja.index'); });
     Route::get('/keuangan', [KeuanganController::class, 'index'])->name('keuangan.index')->middleware('role:BPH');

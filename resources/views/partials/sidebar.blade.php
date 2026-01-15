@@ -44,6 +44,11 @@
             <i class="fa-solid fa-chart-line"></i>
             <span>Program Kerja</span>
         </a>
+        
+        <a href="{{ route('profile') }}" class="nav-item {{ Request::is('profile*') ? 'active' : '' }}">
+            <i class="fa-solid fa-id-card"></i>
+            <span>Profil Saya</span>
+        </a>
 
         <!-- Keuangan (Hanya BPH) -->
         @if($isBPH)
