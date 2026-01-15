@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: db:3306
--- Waktu pembuatan: 14 Jan 2026 pada 06.07
--- Versi server: 8.0.44
--- Versi PHP: 8.3.26
+-- Generation Time: Jan 15, 2026 at 01:43 AM
+-- Server version: 8.0.44
+-- PHP Version: 8.3.26
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,13 +18,207 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Basis data: `db_sistem_dpc`
+-- Database: `db_sistem_dpc`
 --
 
 DELIMITER $$
 --
--- Prosedur
+-- Procedures
 --
+CREATE DEFINER=`root`@`%` PROCEDURE `sp_dashboard_anggota` (IN `p_id_anggota` INT)   BEGIN
+    -- 1. Cek Jam Masuk Hari Ini
+    SELECT jam_masuk INTO @jam_masuk 
+    FROM Riwayat_Absensi 
+    WHERE id_anggota = p_id_anggota 
+    AND tanggal = CURDATE() 
+    LIMIT 1;
+
+    -- 2. Cek Apakah Sudah Lapor Hari Ini (1 = Sudah, 0 = Belum)
+    SELECT COUNT(*) INTO @sudah_lapor 
+    FROM Laporan_Harian 
+    WHERE id_anggota = p_id_anggota 
+    AND tanggal_laporan = CURDATE();
+
+    -- Outputkan hasilnya
+    SELECT 
+        COALESCE(@jam_masuk, NULL) AS jam_masuk,
+        @sudah_lapor AS status_lapor;
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `sp_dashboard_bph` ()   BEGIN
+    -- 1. Hitung Total Anggota Aktif
+    SELECT COUNT(*) INTO @total_anggota FROM Anggota WHERE status_aktif = 1;
+
+    -- 2. Hitung Hadir Hari Ini
+    SELECT COUNT(*) INTO @hadir_hari_ini FROM Riwayat_Absensi 
+    WHERE tanggal = CURDATE() AND status_kehadiran = 'HADIR';
+
+    -- 3. Hitung Dinas Hari Ini (BARU DITAMBAHKAN)
+    -- Menggunakan LIKE 'DINAS%' agar menangkap 'DINAS', 'DINAS_LUAR', dll
+    SELECT COUNT(*) INTO @dinas_hari_ini FROM Riwayat_Absensi 
+    WHERE tanggal = CURDATE() AND status_kehadiran LIKE 'DINAS%';
+
+    -- 4. Hitung Laporan Masuk Hari Ini
+    SELECT COUNT(*) INTO @laporan_masuk FROM Laporan_Harian 
+    WHERE tanggal_laporan = CURDATE();
+
+    -- 5. Hitung Saldo Kas Bulan Ini
+    SELECT COALESCE(SUM(sisa_saldo), 0) INTO @saldo_kas FROM Periode_Keuangan 
+    WHERE bulan = MONTH(CURDATE()) AND tahun = YEAR(CURDATE());
+
+    -- Outputkan hasilnya (Tambahkan dinas_hari_ini)
+    SELECT 
+        @total_anggota AS total_anggota,
+        @hadir_hari_ini AS hadir_hari_ini,
+        @dinas_hari_ini AS dinas_hari_ini,
+        @laporan_masuk AS laporan_masuk,
+        @saldo_kas AS saldo_kas;
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `sp_divisi_list` ()   BEGIN
+    SELECT id, nama_divisi, kode_divisi
+    FROM Divisi
+    ORDER BY nama_divisi;
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `sp_laporan_create` (IN `p_id_divisi` INT, IN `p_id_anggota` INT, IN `p_id_program_kerja` INT, IN `p_tanggal` DATE, IN `p_judul` VARCHAR(200), IN `p_isi` TEXT, IN `p_url_lampiran` VARCHAR(255), IN `p_status` VARCHAR(10))   BEGIN
+    INSERT INTO Laporan_Harian
+        (id_divisi, id_anggota, id_program_kerja, tanggal_laporan, judul_kegiatan, isi_laporan, url_lampiran, status_laporan)
+    VALUES
+        (p_id_divisi, p_id_anggota, p_id_program_kerja, p_tanggal, p_judul, p_isi, p_url_lampiran, p_status);
+
+    SELECT LAST_INSERT_ID() AS id_laporan;
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `sp_laporan_detail` (IN `p_id_laporan` INT)   BEGIN
+    SELECT
+        l.id,
+        l.tanggal_laporan,
+        l.judul_kegiatan,
+        l.isi_laporan,
+        l.status_laporan,
+        l.url_lampiran,
+        l.id_divisi,
+        d.nama_divisi,
+        d.kode_divisi,
+        l.id_anggota,
+        a.nama_lengkap,
+        l.id_program_kerja,
+        pk.nama_program,
+        l.dibuat_pada
+    FROM Laporan_Harian l
+    JOIN Divisi d ON l.id_divisi = d.id
+    JOIN Anggota a ON l.id_anggota = a.id
+    LEFT JOIN Program_Kerja pk ON l.id_program_kerja = pk.id
+    WHERE l.id = p_id_laporan
+    LIMIT 1;
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `sp_laporan_list` (IN `p_level_akses` VARCHAR(10), IN `p_id_divisi` INT, IN `p_search` VARCHAR(200), IN `p_start_date` DATE, IN `p_end_date` DATE, IN `p_filter_divisi` INT)   BEGIN
+    SELECT
+        l.id,
+        l.tanggal_laporan,
+        l.judul_kegiatan,
+        l.isi_laporan,
+        l.status_laporan,
+        l.url_lampiran,
+        l.id_divisi,
+        d.nama_divisi,
+        d.kode_divisi,
+        l.id_anggota,
+        a.nama_lengkap,
+        l.id_program_kerja,
+        pk.nama_program,
+        COALESCE(SUM(tp.total_nominal), 0) AS total_pengeluaran
+    FROM Laporan_Harian l
+    JOIN Divisi d ON l.id_divisi = d.id
+    JOIN Anggota a ON l.id_anggota = a.id
+    LEFT JOIN Program_Kerja pk ON l.id_program_kerja = pk.id
+    LEFT JOIN Transaksi_Pengeluaran tp
+        ON tp.tanggal_transaksi = l.tanggal_laporan
+        AND tp.nama_kegiatan = l.judul_kegiatan
+        AND (tp.id_program_kerja <=> l.id_program_kerja)
+    WHERE (p_level_akses = 'BPH' OR l.id_divisi = p_id_divisi)
+        AND (p_filter_divisi IS NULL OR p_filter_divisi = 0 OR l.id_divisi = p_filter_divisi)
+        AND (p_start_date IS NULL OR l.tanggal_laporan >= p_start_date)
+        AND (p_end_date IS NULL OR l.tanggal_laporan <= p_end_date)
+        AND (
+            p_search IS NULL OR p_search = '' OR
+            l.judul_kegiatan LIKE CONCAT('%', p_search, '%') OR
+            l.isi_laporan LIKE CONCAT('%', p_search, '%') OR
+            a.nama_lengkap LIKE CONCAT('%', p_search, '%')
+        )
+    GROUP BY
+        l.id,
+        l.tanggal_laporan,
+        l.judul_kegiatan,
+        l.isi_laporan,
+        l.status_laporan,
+        l.url_lampiran,
+        l.id_divisi,
+        d.nama_divisi,
+        d.kode_divisi,
+        l.id_anggota,
+        a.nama_lengkap,
+        l.id_program_kerja,
+        pk.nama_program
+    ORDER BY l.tanggal_laporan DESC, l.id DESC;
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `sp_laporan_pengeluaran_detail` (IN `p_id_laporan` INT)   BEGIN
+    SELECT
+        tp.id,
+        tp.tanggal_transaksi,
+        tp.nama_kegiatan,
+        tp.uraian_pengeluaran,
+        tp.volume,
+        tp.satuan,
+        tp.jumlah_rupiah,
+        tp.total_nominal,
+        tp.keterangan,
+        tp.url_bukti_struk
+    FROM Laporan_Harian l
+    LEFT JOIN Transaksi_Pengeluaran tp
+        ON tp.tanggal_transaksi = l.tanggal_laporan
+        AND tp.nama_kegiatan = l.judul_kegiatan
+        AND (tp.id_program_kerja <=> l.id_program_kerja)
+    WHERE l.id = p_id_laporan
+    ORDER BY tp.id ASC;
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `sp_laporan_saldo_bph` (IN `p_bulan` TINYINT, IN `p_tahun` SMALLINT)   BEGIN
+    SELECT
+        d.id,
+        d.nama_divisi,
+        d.kode_divisi,
+        COALESCE(pk.saldo_awal, 0) AS saldo_awal,
+        COALESCE(pk.total_pengeluaran, 0) AS total_pengeluaran,
+        COALESCE(pk.sisa_saldo, 0) AS sisa_saldo
+    FROM Divisi d
+    LEFT JOIN Periode_Keuangan pk
+        ON pk.id_divisi = d.id
+        AND pk.bulan = p_bulan
+        AND pk.tahun = p_tahun
+    ORDER BY d.nama_divisi;
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `sp_laporan_saldo_divisi` (IN `p_id_divisi` INT, IN `p_bulan` TINYINT, IN `p_tahun` SMALLINT)   BEGIN
+    SELECT
+        d.id,
+        d.nama_divisi,
+        d.kode_divisi,
+        COALESCE(pk.saldo_awal, 0) AS saldo_awal,
+        COALESCE(pk.total_pengeluaran, 0) AS total_pengeluaran,
+        COALESCE(pk.sisa_saldo, 0) AS sisa_saldo
+    FROM Divisi d
+    LEFT JOIN Periode_Keuangan pk
+        ON pk.id_divisi = d.id
+        AND pk.bulan = p_bulan
+        AND pk.tahun = p_tahun
+    WHERE d.id = p_id_divisi
+    LIMIT 1;
+END$$
+
 CREATE DEFINER=`root`@`%` PROCEDURE `sp_login_anggota` (IN `p_username` VARCHAR(50))   BEGIN
     -- Ambil data anggota + nama jabatan + nama divisi
     SELECT 
@@ -45,12 +239,43 @@ CREATE DEFINER=`root`@`%` PROCEDURE `sp_login_anggota` (IN `p_username` VARCHAR(
     LIMIT 1;
 END$$
 
+CREATE DEFINER=`root`@`%` PROCEDURE `sp_pengeluaran_create` (IN `p_id_periode_keuangan` INT, IN `p_id_program_kerja` INT, IN `p_tanggal` DATE, IN `p_nama_kegiatan` VARCHAR(200), IN `p_uraian` TEXT, IN `p_volume` DECIMAL(10,2), IN `p_satuan` VARCHAR(50), IN `p_jumlah_rupiah` DECIMAL(15,2), IN `p_keterangan` VARCHAR(255), IN `p_url_bukti` VARCHAR(255))   BEGIN
+    DECLARE v_total DECIMAL(15,2);
+    SET v_total = COALESCE(p_volume, 1) * COALESCE(p_jumlah_rupiah, 0);
+
+    INSERT INTO Transaksi_Pengeluaran
+        (id_periode_keuangan, id_program_kerja, tanggal_transaksi, nama_kegiatan, uraian_pengeluaran, volume, satuan, jumlah_rupiah, keterangan, url_bukti_struk)
+    VALUES
+        (p_id_periode_keuangan, p_id_program_kerja, p_tanggal, p_nama_kegiatan, p_uraian, p_volume, p_satuan, p_jumlah_rupiah, p_keterangan, p_url_bukti);
+
+    UPDATE Periode_Keuangan
+    SET total_pengeluaran = total_pengeluaran + v_total,
+        sisa_saldo = sisa_saldo - v_total
+    WHERE id = p_id_periode_keuangan;
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `sp_periode_keuangan_get` (IN `p_id_divisi` INT, IN `p_tanggal` DATE)   BEGIN
+    SELECT id, saldo_awal, total_pengeluaran, sisa_saldo
+    FROM Periode_Keuangan
+    WHERE id_divisi = p_id_divisi
+        AND bulan = MONTH(p_tanggal)
+        AND tahun = YEAR(p_tanggal)
+    LIMIT 1;
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `sp_program_kerja_by_divisi` (IN `p_id_divisi` INT)   BEGIN
+    SELECT id, nama_program
+    FROM Program_Kerja
+    WHERE p_id_divisi IS NULL OR id_divisi = p_id_divisi
+    ORDER BY nama_program;
+END$$
+
 DELIMITER ;
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `Anggota`
+-- Table structure for table `Anggota`
 --
 
 CREATE TABLE `Anggota` (
@@ -72,7 +297,7 @@ CREATE TABLE `Anggota` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Dumping data untuk tabel `Anggota`
+-- Dumping data for table `Anggota`
 --
 
 INSERT INTO `Anggota` (`id`, `nama_lengkap`, `username`, `password_hash`, `email`, `remember_token`, `nomor_hp`, `id_divisi`, `id_jabatan`, `string_kode_qr`, `foto_profil`, `status_aktif`, `terakhir_login`, `dibuat_pada`, `diupdate_pada`) VALUES
@@ -89,7 +314,7 @@ INSERT INTO `Anggota` (`id`, `nama_lengkap`, `username`, `password_hash`, `email
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `Divisi`
+-- Table structure for table `Divisi`
 --
 
 CREATE TABLE `Divisi` (
@@ -101,7 +326,7 @@ CREATE TABLE `Divisi` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Dumping data untuk tabel `Divisi`
+-- Dumping data for table `Divisi`
 --
 
 INSERT INTO `Divisi` (`id`, `nama_divisi`, `kode_divisi`, `deskripsi`, `dibuat_pada`) VALUES
@@ -114,7 +339,7 @@ INSERT INTO `Divisi` (`id`, `nama_divisi`, `kode_divisi`, `deskripsi`, `dibuat_p
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `failed_jobs`
+-- Table structure for table `failed_jobs`
 --
 
 CREATE TABLE `failed_jobs` (
@@ -130,7 +355,7 @@ CREATE TABLE `failed_jobs` (
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `Jabatan`
+-- Table structure for table `Jabatan`
 --
 
 CREATE TABLE `Jabatan` (
@@ -142,7 +367,7 @@ CREATE TABLE `Jabatan` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Dumping data untuk tabel `Jabatan`
+-- Dumping data for table `Jabatan`
 --
 
 INSERT INTO `Jabatan` (`id`, `nama_jabatan`, `id_divisi`, `level_akses`, `dibuat_pada`) VALUES
@@ -159,7 +384,7 @@ INSERT INTO `Jabatan` (`id`, `nama_jabatan`, `id_divisi`, `level_akses`, `dibuat
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `Laporan_Harian`
+-- Table structure for table `Laporan_Harian`
 --
 
 CREATE TABLE `Laporan_Harian` (
@@ -175,10 +400,18 @@ CREATE TABLE `Laporan_Harian` (
   `dibuat_pada` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+--
+-- Dumping data for table `Laporan_Harian`
+--
+
+INSERT INTO `Laporan_Harian` (`id`, `id_divisi`, `id_anggota`, `id_program_kerja`, `tanggal_laporan`, `judul_kegiatan`, `isi_laporan`, `url_lampiran`, `status_laporan`, `dibuat_pada`) VALUES
+(1, 1, 1, NULL, '2026-01-14', 'operasional kesekretariatan', 'coba hasil codingan', '/storage/laporan/IrheF8KX30DnZepQGUi25F9SwpcIc4n81qMJBvrz.png', 'DISUBMIT', '2026-01-14 20:40:07'),
+(4, 3, 1, NULL, '2026-01-19', 'LDKM', 'coba masukin data lagi', '/storage/laporan/MJD49CGsUAZfqiUngo3GflOSRaMtQ8Fk1y2MiOgC.png', 'DISUBMIT', '2026-01-15 01:11:54');
+
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `Log_Audit`
+-- Table structure for table `Log_Audit`
 --
 
 CREATE TABLE `Log_Audit` (
@@ -195,7 +428,7 @@ CREATE TABLE `Log_Audit` (
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `migrations`
+-- Table structure for table `migrations`
 --
 
 CREATE TABLE `migrations` (
@@ -205,7 +438,7 @@ CREATE TABLE `migrations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Dumping data untuk tabel `migrations`
+-- Dumping data for table `migrations`
 --
 
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
@@ -218,7 +451,7 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `password_reset_tokens`
+-- Table structure for table `password_reset_tokens`
 --
 
 CREATE TABLE `password_reset_tokens` (
@@ -230,7 +463,7 @@ CREATE TABLE `password_reset_tokens` (
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `Pengajuan_Absensi`
+-- Table structure for table `Pengajuan_Absensi`
 --
 
 CREATE TABLE `Pengajuan_Absensi` (
@@ -252,7 +485,7 @@ CREATE TABLE `Pengajuan_Absensi` (
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `Periode_Keuangan`
+-- Table structure for table `Periode_Keuangan`
 --
 
 CREATE TABLE `Periode_Keuangan` (
@@ -269,12 +502,12 @@ CREATE TABLE `Periode_Keuangan` (
   `status_dokumen` enum('DRAFT','DISUBMIT','DIKUNCI') DEFAULT 'DRAFT',
   `dibuat_pada` datetime DEFAULT CURRENT_TIMESTAMP,
   `diupdate_pada` datetime DEFAULT NULL
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `personal_access_tokens`
+-- Table structure for table `personal_access_tokens`
 --
 
 CREATE TABLE `personal_access_tokens` (
@@ -293,7 +526,7 @@ CREATE TABLE `personal_access_tokens` (
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `Program_Kerja`
+-- Table structure for table `Program_Kerja`
 --
 
 CREATE TABLE `Program_Kerja` (
@@ -313,7 +546,7 @@ CREATE TABLE `Program_Kerja` (
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `Riwayat_Absensi`
+-- Table structure for table `Riwayat_Absensi`
 --
 
 CREATE TABLE `Riwayat_Absensi` (
@@ -331,7 +564,7 @@ CREATE TABLE `Riwayat_Absensi` (
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `sessions`
+-- Table structure for table `sessions`
 --
 
 CREATE TABLE `sessions` (
@@ -344,17 +577,23 @@ CREATE TABLE `sessions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Dumping data untuk tabel `sessions`
+-- Dumping data for table `sessions`
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
+('D1F6JLjU3eGfq6ewHzTVCKqWkgwNW4fPLgkQD9nz', 1, '172.19.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiZEFHTDF0NWc1VnpFamhRRkZvY3hhU2VleFFGNmpTWm5aYnNZSVlSZiI7czozOiJ1cmwiO2E6MDp7fXM6OToiX3ByZXZpb3VzIjthOjE6e3M6MzoidXJsIjtzOjMxOiJodHRwOi8vbG9jYWxob3N0OjgwMDAvZGFzaGJvYXJkIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjEyOiJ1c2VyX2phYmF0YW4iO3M6OToiS2V0dWEgRFBDIjtzOjEwOiJ1c2VyX2xldmVsIjtzOjM6IkJQSCI7czoxMToidXNlcl9kaXZpc2kiO3M6MToiLSI7fQ==', 1768384639),
 ('inuecKXlc398urLUWOEVvvU4baQYn3TQ37o6cXjC', 4, '172.18.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoiekNsa0V5WE8yUE1zRDBQSVFKS3NqVTZuOXRZMG5aRWIxNFozRUJwdSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9kYXNoYm9hcmQiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo0O3M6MTI6InVzZXJfamFiYXRhbiI7czoyMzoiS2V0dWEgQmlkYW5nIE9yZ2FuaXNhc2kiO3M6MTA6InVzZXJfbGV2ZWwiO3M6NjoiS09SQklEIjtzOjExOiJ1c2VyX2RpdmlzaSI7czoxNzoiQmlkYW5nIE9yZ2FuaXNhc2kiO30=', 1768370567),
-('u8EPdzhYUac7KGclwYTG896uCjTwSFxFcgXj8R3R', 1, '172.18.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiNGZ1SzRQeEowR09BQXhjUGREOGRaeTFaeDZOenJOa21KaklJVlA3NyI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9kYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6MTI6InVzZXJfamFiYXRhbiI7czo5OiJLZXR1YSBEUEMiO3M6MTA6InVzZXJfbGV2ZWwiO3M6MzoiQlBIIjtzOjExOiJ1c2VyX2RpdmlzaSI7czoxOiItIjtzOjM6InVybCI7YToxOntzOjg6ImludGVuZGVkIjtzOjMxOiJodHRwOi8vbG9jYWxob3N0OjgwMDAvZGFzaGJvYXJkIjt9fQ==', 1768363960);
+('IOd7y9lxqKiznHoReQISLZfwCs4wK74RaRdnLIeX', 1, '172.19.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiZjdQRWtmY3QzZTVnUFpoRFlPdHJTWFlKUUxDY21keTA0UHFmN2tLVyI7czozOiJ1cmwiO2E6MDp7fXM6OToiX3ByZXZpb3VzIjthOjE6e3M6MzoidXJsIjtzOjMwOiJodHRwOi8vbG9jYWxob3N0OjgwMDAva2V1YW5nYW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6MTI6InVzZXJfamFiYXRhbiI7czo5OiJLZXR1YSBEUEMiO3M6MTA6InVzZXJfbGV2ZWwiO3M6MzoiQlBIIjtzOjExOiJ1c2VyX2RpdmlzaSI7czoxOiItIjt9', 1768423776),
+('kYTXrMjVPXjfHKXXHurtTHu8pzILFvlmARqcdzLe', NULL, '172.19.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiRTQ2dmRnZHhVMVdsaWVwQWlnRjhLTVNhMkg2ckpDQnVFb0x2U1BNdyI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozMToiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2Rhc2hib2FyZCI7fXM6OToiX3ByZXZpb3VzIjthOjE6e3M6MzoidXJsIjtzOjI3OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1768397149),
+('oTX5URxpS2LC08lfT93jTVNqpJdZ088oD3cvNCzG', 1, '172.19.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiMlNZN0g4bHAzb0hmT3Q2ajJmM1RIdGhHcmV0amtXQ2M3SWlIWkc5MiI7czozOiJ1cmwiO2E6MDp7fXM6OToiX3ByZXZpb3VzIjthOjE6e3M6MzoidXJsIjtzOjI3OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6MTI6InVzZXJfamFiYXRhbiI7czo5OiJLZXR1YSBEUEMiO3M6MTA6InVzZXJfbGV2ZWwiO3M6MzoiQlBIIjtzOjExOiJ1c2VyX2RpdmlzaSI7czoxOiItIjt9', 1768406703),
+('RaXrPpDpRJr9CGbpuCvjPDQXklvvjD2t24TmRXS9', 1, '172.19.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo3OntzOjY6Il90b2tlbiI7czo0MDoiblpZdDJwaDNKdnBEMVJtelJZNHNNOXlZUW1tT1ZwRk0wZk5UUVRsSSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjk6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9sYXBvcmFuIjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjEyOiJ1c2VyX2phYmF0YW4iO3M6OToiS2V0dWEgRFBDIjtzOjEwOiJ1c2VyX2xldmVsIjtzOjM6IkJQSCI7czoxMToidXNlcl9kaXZpc2kiO3M6MToiLSI7fQ==', 1768441423),
+('u8EPdzhYUac7KGclwYTG896uCjTwSFxFcgXj8R3R', 1, '172.18.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiNGZ1SzRQeEowR09BQXhjUGREOGRaeTFaeDZOenJOa21KaklJVlA3NyI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9kYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6MTI6InVzZXJfamFiYXRhbiI7czo5OiJLZXR1YSBEUEMiO3M6MTA6InVzZXJfbGV2ZWwiO3M6MzoiQlBIIjtzOjExOiJ1c2VyX2RpdmlzaSI7czoxOiItIjtzOjM6InVybCI7YToxOntzOjg6ImludGVuZGVkIjtzOjMxOiJodHRwOi8vbG9jYWxob3N0OjgwMDAvZGFzaGJvYXJkIjt9fQ==', 1768363960),
+('WOcoEHN2hUfwFT5rj6sVpi9PENk31P2yhOFFZ4oP', 1, '172.19.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo4OntzOjY6Il90b2tlbiI7czo0MDoiZzBzdWFWMWh5bTBrUTZTNUxPUWxlQzRRakxtbFdFSE5GVnhPMGtOZSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czozOiJ1cmwiO2E6MDp7fXM6OToiX3ByZXZpb3VzIjthOjE6e3M6MzoidXJsIjtzOjMxOiJodHRwOi8vbG9jYWxob3N0OjgwMDAvZGFzaGJvYXJkIjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjEyOiJ1c2VyX2phYmF0YW4iO3M6OToiS2V0dWEgRFBDIjtzOjEwOiJ1c2VyX2xldmVsIjtzOjM6IkJQSCI7czoxMToidXNlcl9kaXZpc2kiO3M6MToiLSI7fQ==', 1768408760);
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `Transaksi_Pengeluaran`
+-- Table structure for table `Transaksi_Pengeluaran`
 --
 
 CREATE TABLE `Transaksi_Pengeluaran` (
@@ -376,7 +615,7 @@ CREATE TABLE `Transaksi_Pengeluaran` (
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `users`
+-- Table structure for table `users`
 --
 
 CREATE TABLE `users` (
@@ -391,11 +630,11 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Indeks untuk tabel yang dibuang
+-- Indexes for dumped tables
 --
 
 --
--- Indeks untuk tabel `Anggota`
+-- Indexes for table `Anggota`
 --
 ALTER TABLE `Anggota`
   ADD PRIMARY KEY (`id`),
@@ -405,7 +644,7 @@ ALTER TABLE `Anggota`
   ADD KEY `id_jabatan` (`id_jabatan`);
 
 --
--- Indeks untuk tabel `Divisi`
+-- Indexes for table `Divisi`
 --
 ALTER TABLE `Divisi`
   ADD PRIMARY KEY (`id`),
@@ -413,21 +652,21 @@ ALTER TABLE `Divisi`
   ADD UNIQUE KEY `kode_divisi` (`kode_divisi`);
 
 --
--- Indeks untuk tabel `failed_jobs`
+-- Indexes for table `failed_jobs`
 --
 ALTER TABLE `failed_jobs`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`);
 
 --
--- Indeks untuk tabel `Jabatan`
+-- Indexes for table `Jabatan`
 --
 ALTER TABLE `Jabatan`
   ADD PRIMARY KEY (`id`),
   ADD KEY `id_divisi` (`id_divisi`);
 
 --
--- Indeks untuk tabel `Laporan_Harian`
+-- Indexes for table `Laporan_Harian`
 --
 ALTER TABLE `Laporan_Harian`
   ADD PRIMARY KEY (`id`),
@@ -436,25 +675,25 @@ ALTER TABLE `Laporan_Harian`
   ADD KEY `id_program_kerja` (`id_program_kerja`);
 
 --
--- Indeks untuk tabel `Log_Audit`
+-- Indexes for table `Log_Audit`
 --
 ALTER TABLE `Log_Audit`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `migrations`
+-- Indexes for table `migrations`
 --
 ALTER TABLE `migrations`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `password_reset_tokens`
+-- Indexes for table `password_reset_tokens`
 --
 ALTER TABLE `password_reset_tokens`
   ADD PRIMARY KEY (`email`);
 
 --
--- Indeks untuk tabel `Pengajuan_Absensi`
+-- Indexes for table `Pengajuan_Absensi`
 --
 ALTER TABLE `Pengajuan_Absensi`
   ADD PRIMARY KEY (`id`),
@@ -462,7 +701,7 @@ ALTER TABLE `Pengajuan_Absensi`
   ADD KEY `id_penyetuju` (`id_penyetuju`);
 
 --
--- Indeks untuk tabel `Periode_Keuangan`
+-- Indexes for table `Periode_Keuangan`
 --
 ALTER TABLE `Periode_Keuangan`
   ADD PRIMARY KEY (`id`),
@@ -470,7 +709,7 @@ ALTER TABLE `Periode_Keuangan`
   ADD KEY `id_penanggung_jawab` (`id_penanggung_jawab`);
 
 --
--- Indeks untuk tabel `personal_access_tokens`
+-- Indexes for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
   ADD PRIMARY KEY (`id`),
@@ -478,7 +717,7 @@ ALTER TABLE `personal_access_tokens`
   ADD KEY `personal_access_tokens_tokenable_type_tokenable_id_index` (`tokenable_type`,`tokenable_id`);
 
 --
--- Indeks untuk tabel `Program_Kerja`
+-- Indexes for table `Program_Kerja`
 --
 ALTER TABLE `Program_Kerja`
   ADD PRIMARY KEY (`id`),
@@ -486,14 +725,14 @@ ALTER TABLE `Program_Kerja`
   ADD KEY `dibuat_oleh` (`dibuat_oleh`);
 
 --
--- Indeks untuk tabel `Riwayat_Absensi`
+-- Indexes for table `Riwayat_Absensi`
 --
 ALTER TABLE `Riwayat_Absensi`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `UQ_Absensi_Harian` (`id_anggota`,`tanggal`);
 
 --
--- Indeks untuk tabel `sessions`
+-- Indexes for table `sessions`
 --
 ALTER TABLE `sessions`
   ADD PRIMARY KEY (`id`),
@@ -501,7 +740,7 @@ ALTER TABLE `sessions`
   ADD KEY `sessions_last_activity_index` (`last_activity`);
 
 --
--- Indeks untuk tabel `Transaksi_Pengeluaran`
+-- Indexes for table `Transaksi_Pengeluaran`
 --
 ALTER TABLE `Transaksi_Pengeluaran`
   ADD PRIMARY KEY (`id`),
@@ -509,119 +748,121 @@ ALTER TABLE `Transaksi_Pengeluaran`
   ADD KEY `id_program_kerja` (`id_program_kerja`);
 
 --
--- Indeks untuk tabel `users`
+-- Indexes for table `users`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `users_email_unique` (`email`);
 
 --
--- AUTO_INCREMENT untuk tabel yang dibuang
+-- AUTO_INCREMENT for dumped tables
 --
 
 --
--- AUTO_INCREMENT untuk tabel `Anggota`
+-- AUTO_INCREMENT for table `Anggota`
 --
 ALTER TABLE `Anggota`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
--- AUTO_INCREMENT untuk tabel `Divisi`
+-- AUTO_INCREMENT for table `Divisi`
 --
 ALTER TABLE `Divisi`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
--- AUTO_INCREMENT untuk tabel `failed_jobs`
+-- AUTO_INCREMENT for table `failed_jobs`
 --
 ALTER TABLE `failed_jobs`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT untuk tabel `Jabatan`
+-- AUTO_INCREMENT for table `Jabatan`
 --
 ALTER TABLE `Jabatan`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
--- AUTO_INCREMENT untuk tabel `Laporan_Harian`
+-- AUTO_INCREMENT for table `Laporan_Harian`
 --
 ALTER TABLE `Laporan_Harian`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
--- AUTO_INCREMENT untuk tabel `Log_Audit`
+-- AUTO_INCREMENT for table `Log_Audit`
 --
 ALTER TABLE `Log_Audit`
   MODIFY `id` bigint NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT untuk tabel `migrations`
+-- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
--- AUTO_INCREMENT untuk tabel `Pengajuan_Absensi`
+-- AUTO_INCREMENT for table `Pengajuan_Absensi`
 --
 ALTER TABLE `Pengajuan_Absensi`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT untuk tabel `Periode_Keuangan`
+-- AUTO_INCREMENT for table `Periode_Keuangan`
 --
 ALTER TABLE `Periode_Keuangan`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT untuk tabel `personal_access_tokens`
+-- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT untuk tabel `Program_Kerja`
+-- AUTO_INCREMENT for table `Program_Kerja`
 --
 ALTER TABLE `Program_Kerja`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT untuk tabel `Riwayat_Absensi`
+-- AUTO_INCREMENT for table `Riwayat_Absensi`
 --
 ALTER TABLE `Riwayat_Absensi`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT untuk tabel `Transaksi_Pengeluaran`
+-- AUTO_INCREMENT for table `Transaksi_Pengeluaran`
 --
 ALTER TABLE `Transaksi_Pengeluaran`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT untuk tabel `users`
+-- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
+-- Constraints for dumped tables
 --
 
 --
--- Ketidakleluasaan untuk tabel `Anggota`
+-- Constraints for table `Anggota`
 --
 ALTER TABLE `Anggota`
   ADD CONSTRAINT `Anggota_ibfk_1` FOREIGN KEY (`id_divisi`) REFERENCES `Divisi` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `Anggota_ibfk_2` FOREIGN KEY (`id_jabatan`) REFERENCES `Jabatan` (`id`) ON DELETE SET NULL;
 
 --
--- Ketidakleluasaan untuk tabel `Jabatan`
+-- Constraints for table `Jabatan`
 --
 ALTER TABLE `Jabatan`
   ADD CONSTRAINT `Jabatan_ibfk_1` FOREIGN KEY (`id_divisi`) REFERENCES `Divisi` (`id`) ON DELETE SET NULL;
 
 --
--- Ketidakleluasaan untuk tabel `Laporan_Harian`
+-- Constraints for table `Laporan_Harian`
 --
 ALTER TABLE `Laporan_Harian`
   ADD CONSTRAINT `Laporan_Harian_ibfk_1` FOREIGN KEY (`id_divisi`) REFERENCES `Divisi` (`id`),
@@ -629,34 +870,34 @@ ALTER TABLE `Laporan_Harian`
   ADD CONSTRAINT `Laporan_Harian_ibfk_3` FOREIGN KEY (`id_program_kerja`) REFERENCES `Program_Kerja` (`id`) ON DELETE SET NULL;
 
 --
--- Ketidakleluasaan untuk tabel `Pengajuan_Absensi`
+-- Constraints for table `Pengajuan_Absensi`
 --
 ALTER TABLE `Pengajuan_Absensi`
   ADD CONSTRAINT `Pengajuan_Absensi_ibfk_1` FOREIGN KEY (`id_anggota`) REFERENCES `Anggota` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `Pengajuan_Absensi_ibfk_2` FOREIGN KEY (`id_penyetuju`) REFERENCES `Anggota` (`id`);
 
 --
--- Ketidakleluasaan untuk tabel `Periode_Keuangan`
+-- Constraints for table `Periode_Keuangan`
 --
 ALTER TABLE `Periode_Keuangan`
   ADD CONSTRAINT `Periode_Keuangan_ibfk_1` FOREIGN KEY (`id_divisi`) REFERENCES `Divisi` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `Periode_Keuangan_ibfk_2` FOREIGN KEY (`id_penanggung_jawab`) REFERENCES `Anggota` (`id`) ON DELETE SET NULL;
 
 --
--- Ketidakleluasaan untuk tabel `Program_Kerja`
+-- Constraints for table `Program_Kerja`
 --
 ALTER TABLE `Program_Kerja`
   ADD CONSTRAINT `Program_Kerja_ibfk_1` FOREIGN KEY (`id_divisi`) REFERENCES `Divisi` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `Program_Kerja_ibfk_2` FOREIGN KEY (`dibuat_oleh`) REFERENCES `Anggota` (`id`);
 
 --
--- Ketidakleluasaan untuk tabel `Riwayat_Absensi`
+-- Constraints for table `Riwayat_Absensi`
 --
 ALTER TABLE `Riwayat_Absensi`
   ADD CONSTRAINT `Riwayat_Absensi_ibfk_1` FOREIGN KEY (`id_anggota`) REFERENCES `Anggota` (`id`) ON DELETE CASCADE;
 
 --
--- Ketidakleluasaan untuk tabel `Transaksi_Pengeluaran`
+-- Constraints for table `Transaksi_Pengeluaran`
 --
 ALTER TABLE `Transaksi_Pengeluaran`
   ADD CONSTRAINT `Transaksi_Pengeluaran_ibfk_1` FOREIGN KEY (`id_periode_keuangan`) REFERENCES `Periode_Keuangan` (`id`) ON DELETE CASCADE,

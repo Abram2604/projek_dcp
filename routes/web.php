@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\CekAksesManajemen;
+use App\Http\Controllers\KeuanganController;
 
 // 1. Route Login & Logout
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -25,10 +26,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/laporan/{id}', [LaporanController::class, 'show'])->name('laporan.show');
     
     Route::get('/progja', function () { return view('progja.index'); });
-    
-    // Keuangan (Hanya BPH - Jika mau pakai middleware role, pastikan middlewarenya sudah ada)
-    // Jika belum ada middleware 'role', pakai logika di controller atau middleware custom
-    Route::get('/keuangan', function () { return view('keuangan.index'); });
+    Route::get('/keuangan', [KeuanganController::class, 'index'])->name('keuangan.index')->middleware('role:BPH');
+    Route::post('/keuangan/saldo-awal', [KeuanganController::class, 'storeSaldoAwal'])
+        ->name('keuangan.saldo_awal')
+        ->middleware('role:BPH');
+ 
 
     // === MANAJEMEN ANGGOTA (Users) ===
     // Menggunakan Middleware CekAksesManajemen yang sudah kita buat
@@ -42,4 +44,3 @@ Route::middleware('auth')->group(function () {
         Route::put('/users/{id}/activate', [UserController::class, 'activate'])->name('users.activate');
     });
 
-});
