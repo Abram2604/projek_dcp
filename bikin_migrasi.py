@@ -37,7 +37,7 @@ def write_file(filename, content):
     with open(full_path, 'w') as f:
         f.write(content)
     
-    print(f"\n{Colors.GREEN}✔ Sukses! File migrasi dibuat:{Colors.ENDC}")
+    print(f"\n{Colors.GREEN}Sukses! File migrasi dibuat:{Colors.ENDC}")
     print(f"{Colors.BOLD}{full_path}{Colors.ENDC}")
     print(f"{Colors.BLUE}Silakan cek file tersebut untuk memastikan query sudah benar.{Colors.ENDC}")
 
