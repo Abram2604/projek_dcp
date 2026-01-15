@@ -255,38 +255,57 @@ $indigo-200: #c7d2fe;
     }
 }
 
-// Mobile Responsiveness
-@media (max-width: 991.98px) {
-    .sidebar-wrapper {
-        transform: translateX(-100%); // Sembunyikan ke kiri
-        transition: transform 0.3s ease-in-out;
-    }
-    .main-content {
-        margin-left: 0;
-    }
-    
-    body.sidebar-open .sidebar-wrapper {
-        transform: translateX(0);
-    }
+// ... (Kode styling sidebar yang sudah ada di atas biarkan saja) ...
 
-    // Class toggler untuk menampilkan sidebar di mobile
-    .sidebar-toggled .sidebar-wrapper {
-        margin-left: 0;
+// === RESPONSIF MOBILE (Bagian ini yang Perlu Diupdate) ===
+@media (max-width: 991.98px) {
+    // 1. Kondisi Awal Sidebar (Tersembunyi)
+    .sidebar-wrapper {
+        transform: translateX(-100%); // Geser ke kiri layar
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: none;
     }
     
-    // Overlay saat sidebar muncul di mobile
+    // 2. Konten Utama Full Width
+    .main-content {
+        margin-left: 0 !important;
+        width: 100%;
+    }
+    
+    // 3. Styling Overlay (Layar Gelap)
     .sidebar-overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100vw;
         height: 100vh;
-        background: rgba(0,0,0,0.5);
-        z-index: 999;
-        display: none;
+        background-color: rgba(0, 0, 0, 0.5); // Hitam transparan
+        z-index: 999; // Di bawah sidebar (1000)
+        backdrop-filter: blur(2px); // Efek blur dikit (opsional)
+        
+        // Default sembunyi
+        visibility: hidden;
+        opacity: 0;
+        transition: all 0.3s ease-in-out;
     }
-    .sidebar-toggled .sidebar-overlay {
-        display: block;
+
+    // === STATE KETIKA SIDEBAR DIBUKA (sidebar-open) ===
+    
+    // Saat body punya class 'sidebar-open', sidebar masuk ke layar
+    body.sidebar-open .sidebar-wrapper {
+        transform: translateX(0);
+        box-shadow: 10px 0 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    // Saat body punya class 'sidebar-open', overlay muncul
+    body.sidebar-open .sidebar-overlay {
+        visibility: visible;
+        opacity: 1;
+    }
+    
+    // Kunci scroll body saat sidebar terbuka
+    body.sidebar-open {
+        overflow: hidden;
     }
 }
 
