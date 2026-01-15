@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LaporanController;
 
 // 1. Route Login & Logout
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -13,9 +15,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/', function () { return redirect('/dashboard'); });
     
     // Perbaikan nama view (Hapus .index)
-    Route::get('/dashboard', function () { return view('dashboard.index'); })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/absensi', function () { return view('absensi.index'); });
-    Route::get('/laporan', function () { return view('laporan.index'); });
+    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
+    Route::post('/laporan', [LaporanController::class, 'store'])->name('laporan.store');
+    Route::get('/laporan/{id}', [LaporanController::class, 'show'])->name('laporan.show');
     Route::get('/progja', function () { return view('progja.index'); });
     Route::get('/keuangan', function () { return view('keuangan.index'); });
     Route::get('/users', function () { return view('users.index'); });
