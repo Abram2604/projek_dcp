@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\KeuanganController;
 
 // 1. Route Login & Logout
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -21,16 +22,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/laporan', [LaporanController::class, 'store'])->name('laporan.store');
     Route::get('/laporan/{id}', [LaporanController::class, 'show'])->name('laporan.show');
     Route::get('/progja', function () { return view('progja.index'); });
-    Route::get('/keuangan', function () { return view('keuangan.index'); });
+    Route::get('/keuangan', [KeuanganController::class, 'index'])->name('keuangan.index')->middleware('role:BPH');
+    Route::post('/keuangan/saldo-awal', [KeuanganController::class, 'storeSaldoAwal'])
+        ->name('keuangan.saldo_awal')
+        ->middleware('role:BPH');
     Route::get('/users', function () { return view('users.index'); });
-
-
-      Route::get('/keuangan', function () { 
-        return view('pages.keuangan.index'); 
-    })->middleware('role:BPH'); // <--- Cuma BPH yang boleh masuk
+    // <--- Cuma BPH yang boleh masuk
 
     // BPH DAN KORBID (Admin Divisi) BISA AKSES USER
-    Route::get('/users', function () { 
-        return view('pages.users.index'); 
+    Route::get('/users', function () {
+        return view('pages.users.index');
     })->middleware('role:BPH,KORBID'); // <--- BPH & KORBID boleh masuk
 });

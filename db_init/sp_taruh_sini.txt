@@ -70,6 +70,11 @@ DROP PROCEDURE IF EXISTS sp_laporan_pengeluaran_detail;
 DROP PROCEDURE IF EXISTS sp_periode_keuangan_get;
 DROP PROCEDURE IF EXISTS sp_laporan_create;
 DROP PROCEDURE IF EXISTS sp_pengeluaran_create;
+DROP PROCEDURE IF EXISTS sp_keuangan_summary;
+DROP PROCEDURE IF EXISTS sp_keuangan_divisi_summary;
+DROP PROCEDURE IF EXISTS sp_keuangan_pengeluaran_recent;
+DROP PROCEDURE IF EXISTS sp_keuangan_pengeluaran_detail;
+DROP PROCEDURE IF EXISTS sp_keuangan_set_saldo_awal;
 
 DELIMITER $$
 
@@ -283,6 +288,125 @@ BEGIN
     SET total_pengeluaran = total_pengeluaran + v_total,
         sisa_saldo = sisa_saldo - v_total
     WHERE id = p_id_periode_keuangan;
+END$$
+
+CREATE PROCEDURE sp_keuangan_summary(IN p_bulan TINYINT, IN p_tahun SMALLINT)
+BEGIN
+    SELECT
+        COALESCE(SUM(CASE WHEN bulan = p_bulan THEN sisa_saldo ELSE 0 END), 0) AS total_saldo_aktif,
+        COALESCE(SUM(CASE WHEN bulan = p_bulan THEN dana_masuk ELSE 0 END), 0) AS pemasukan_bulan_ini,
+        COALESCE(SUM(dana_masuk), 0) AS total_pemasukan_tahun,
+        COALESCE(SUM(total_pengeluaran), 0) AS total_pengeluaran_tahun
+    FROM Periode_Keuangan
+    WHERE tahun = p_tahun;
+END$$
+
+CREATE PROCEDURE sp_keuangan_divisi_summary(IN p_bulan TINYINT, IN p_tahun SMALLINT)
+BEGIN
+    SELECT
+        d.id,
+        d.nama_divisi,
+        d.kode_divisi,
+        COALESCE(pk.saldo_awal, 0) AS saldo_awal,
+        COALESCE(pk.total_pengeluaran, 0) AS total_pengeluaran,
+        COALESCE(pk.sisa_saldo, 0) AS sisa_saldo
+    FROM Divisi d
+    LEFT JOIN Periode_Keuangan pk
+        ON pk.id_divisi = d.id
+        AND pk.bulan = p_bulan
+        AND pk.tahun = p_tahun
+    ORDER BY d.nama_divisi;
+END$$
+
+CREATE PROCEDURE sp_keuangan_pengeluaran_recent(IN p_bulan TINYINT, IN p_tahun SMALLINT, IN p_limit INT)
+BEGIN
+    SELECT
+        tp.id,
+        tp.tanggal_transaksi,
+        tp.nama_kegiatan,
+        tp.uraian_pengeluaran,
+        tp.volume,
+        tp.satuan,
+        tp.jumlah_rupiah,
+        tp.total_nominal,
+        d.nama_divisi,
+        pk.nama_program
+    FROM Transaksi_Pengeluaran tp
+    JOIN Periode_Keuangan pkh ON tp.id_periode_keuangan = pkh.id
+    JOIN Divisi d ON pkh.id_divisi = d.id
+    LEFT JOIN Program_Kerja pk ON tp.id_program_kerja = pk.id
+    WHERE pkh.bulan = p_bulan
+        AND pkh.tahun = p_tahun
+    ORDER BY tp.tanggal_transaksi DESC, tp.id DESC
+    LIMIT p_limit;
+END$$
+
+CREATE PROCEDURE sp_keuangan_pengeluaran_detail(IN p_id_divisi INT, IN p_bulan TINYINT, IN p_tahun SMALLINT)
+BEGIN
+    SELECT
+        tp.id,
+        tp.tanggal_transaksi,
+        tp.nama_kegiatan,
+        tp.uraian_pengeluaran,
+        tp.volume,
+        tp.satuan,
+        tp.jumlah_rupiah,
+        tp.total_nominal,
+        tp.keterangan,
+        tp.url_bukti_struk,
+        pk.nama_program
+    FROM Transaksi_Pengeluaran tp
+    JOIN Periode_Keuangan pkh ON tp.id_periode_keuangan = pkh.id
+    LEFT JOIN Program_Kerja pk ON tp.id_program_kerja = pk.id
+    WHERE pkh.id_divisi = p_id_divisi
+        AND pkh.bulan = p_bulan
+        AND pkh.tahun = p_tahun
+    ORDER BY tp.tanggal_transaksi DESC, tp.id DESC;
+END$$
+
+CREATE PROCEDURE sp_keuangan_set_saldo_awal(
+    IN p_id_divisi INT,
+    IN p_bulan TINYINT,
+    IN p_tahun SMALLINT,
+    IN p_saldo_awal DECIMAL(15,2),
+    IN p_id_penanggung_jawab INT
+)
+BEGIN
+    DECLARE v_dana_masuk DECIMAL(15,2);
+    DECLARE v_total_pengeluaran DECIMAL(15,2);
+    DECLARE v_exists INT DEFAULT 0;
+
+    SELECT COUNT(*)
+    INTO v_exists
+    FROM Periode_Keuangan
+    WHERE id_divisi = p_id_divisi
+        AND bulan = p_bulan
+        AND tahun = p_tahun;
+
+    IF v_exists = 0 THEN
+        INSERT INTO Periode_Keuangan
+            (id_divisi, bulan, tahun, id_penanggung_jawab, saldo_awal, dana_masuk, total_dana_tersedia, total_pengeluaran, sisa_saldo, status_dokumen, dibuat_pada)
+        VALUES
+            (p_id_divisi, p_bulan, p_tahun, p_id_penanggung_jawab, p_saldo_awal, 0, p_saldo_awal, 0, p_saldo_awal, 'DRAFT', NOW());
+    ELSE
+        SELECT dana_masuk, total_pengeluaran
+        INTO v_dana_masuk, v_total_pengeluaran
+        FROM Periode_Keuangan
+        WHERE id_divisi = p_id_divisi
+            AND bulan = p_bulan
+            AND tahun = p_tahun
+        LIMIT 1;
+
+        UPDATE Periode_Keuangan
+        SET saldo_awal = p_saldo_awal,
+            id_penanggung_jawab = p_id_penanggung_jawab,
+            total_dana_tersedia = p_saldo_awal + COALESCE(v_dana_masuk, 0),
+            sisa_saldo = (p_saldo_awal + COALESCE(v_dana_masuk, 0)) - COALESCE(v_total_pengeluaran, 0),
+            diupdate_pada = NOW()
+        WHERE id_divisi = p_id_divisi
+            AND bulan = p_bulan
+            AND tahun = p_tahun;
+    END IF;
 END$$
 
 DELIMITER ;
