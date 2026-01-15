@@ -15,8 +15,8 @@ $dark:          #111827; // Gray 900
 $font-family-sans-serif: 'Inter', system-ui, -apple-system, sans-serif;
 
 // Sidebar Config Variables
-$sidebar-bg:    #312e81; // Indigo 900 (Updated)
-$sidebar-width: 280px;   // Lebar diperbesar sedikit agar pas dengan desain baru
+$sidebar-bg:    #312e81; // Indigo 900
+$sidebar-width: 280px;
 
 // 3. Import Bootstrap
 @import 'bootstrap/scss/bootstrap';
@@ -27,8 +27,7 @@ body {
     font-size: 0.925rem;
 }
 
-// === NEW SIDEBAR STYLING (MATCHING REACT DESIGN) ===
-// Local variables for sidebar specific shades
+// === NEW SIDEBAR STYLING ===
 $indigo-900: #312e81;
 $indigo-800: #3730a3;
 $indigo-700: #4338ca;
@@ -37,7 +36,6 @@ $indigo-300: #a5b4fc;
 $indigo-200: #c7d2fe;
 
 .sidebar-wrapper {
-    // Layout Dasar (w-64 flex flex-col bg-indigo-900)
     width: 280px; 
     height: 100vh;
     background-color: $indigo-900;
@@ -51,68 +49,44 @@ $indigo-200: #c7d2fe;
     font-family: 'Inter', sans-serif;
     border-right: 1px solid rgba(255, 255, 255, 0.05);
 
-    // 1. HEADER (p-6 flex items-center gap-3)
     .sidebar-header {
         padding: 1.5rem; 
         display: flex;
         align-items: center;
         gap: 0.75rem; 
 
-        // Logo Box (w-10 h-10 bg-white rounded-lg)
         .logo-box {
-            width: 2.5rem;  // 40px
-            height: 2.5rem; // 40px
+            width: 2.5rem;
+            height: 2.5rem;
             background-color: white;
-            border-radius: 0.5rem; // rounded-lg
+            border-radius: 0.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
             color: $indigo-900;
             font-size: 1.25rem;
-            flex-shrink: 0; // Mencegah logo gepeng
+            flex-shrink: 0;
             
-            img {
-                width: 65%;
-                height: auto;
-            }
-            
-            // Jika pakai icon font
+            img { width: 65%; height: auto; }
             i { font-size: 1.2rem; }
         }
 
         .app-title {
             line-height: 1.1;
-            
-            // h1 (text-sm font-bold)
-            h1 {
-                font-size: 0.875rem; 
-                font-weight: 700; 
-                margin: 0;
-                color: white;
-            }
-            
-            // p (text-[10px] text-indigo-300)
-            p {
-                font-size: 0.65rem; 
-                color: $indigo-300;
-                margin: 0;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-            }
+            h1 { font-size: 0.875rem; font-weight: 700; margin: 0; color: white; }
+            p { font-size: 0.65rem; color: $indigo-300; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; }
         }
     }
 
-    // 2. MENU NAVIGASI (flex-1 px-4 py-6 space-y-1)
     .sidebar-menu {
-        flex: 1; // Mengisi sisa ruang
+        flex: 1;
         padding: 1.5rem 1rem; 
-        overflow-y: auto; // Scroll jika menu panjang
+        overflow-y: auto;
         display: flex;
         flex-direction: column;
         gap: 0.25rem; 
 
         .nav-item {
-            // Base Style (w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors)
             display: flex;
             align-items: center;
             gap: 0.75rem; 
@@ -126,14 +100,8 @@ $indigo-200: #c7d2fe;
             width: 100%;
             text-align: left;
             
-            // Icon Size
-            i { 
-                width: 20px; 
-                text-align: center; 
-                font-size: 1.1rem;
-            }
+            i { width: 20px; text-align: center; font-size: 1.1rem; }
 
-            // State: INACTIVE (text-indigo-200 hover:bg-indigo-800 hover:text-white)
             color: $indigo-200;
             background-color: transparent;
 
@@ -142,7 +110,6 @@ $indigo-200: #c7d2fe;
                 color: white;
             }
 
-            // State: ACTIVE (bg-indigo-700 text-white shadow-lg)
             &.active {
                 background-color: $indigo-700;
                 color: white;
@@ -151,59 +118,29 @@ $indigo-200: #c7d2fe;
         }
     }
 
-    // 3. FOOTER (p-4 mt-auto)
     .sidebar-footer {
         padding: 1rem; 
         margin-top: auto; 
 
-        // Info Card (bg-indigo-800 rounded-xl p-4 border border-indigo-700)
         .info-card {
             background-color: $indigo-800;
             border: 1px solid $indigo-700;
-            border-radius: 0.75rem; // rounded-xl
+            border-radius: 0.75rem;
             padding: 1rem; 
             
-            // Header Card (flex items-center gap-3 mb-3)
             .info-label {
                 display: flex;
                 align-items: center;
                 gap: 0.75rem;
                 margin-bottom: 0.75rem;
-                
-                // Icon (text-indigo-300)
-                i { 
-                    font-size: 1rem;
-                    color: $indigo-300; 
-                }
-                
-                // Text (text-xs font-semibold uppercase tracking-wider text-indigo-300)
-                span {
-                    font-size: 0.75rem; 
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    color: $indigo-300;
-                }
+                i { font-size: 1rem; color: $indigo-300; }
+                span { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: $indigo-300; }
             }
 
-            // User Name (text-sm font-medium)
-            .user-name {
-                font-size: 0.875rem; 
-                font-weight: 500; 
-                color: white;
-                margin: 0;
-            }
-
-            // User Dept (text-xs text-indigo-400 mt-1)
-            .user-dept {
-                font-size: 0.75rem; 
-                color: $indigo-400; 
-                margin-top: 0.25rem;
-                margin-bottom: 0;
-            }
+            .user-name { font-size: 0.875rem; font-weight: 500; color: white; margin: 0; }
+            .user-dept { font-size: 0.75rem; color: $indigo-400; margin-top: 0.25rem; margin-bottom: 0; }
         }
         
-        // Tombol Logout Tambahan (Agar Rapi)
         .logout-btn {
             margin-top: 0.75rem;
             width: 100%;
@@ -221,21 +158,20 @@ $indigo-200: #c7d2fe;
 
             &:hover {
                 background: rgba(0,0,0,0.2);
-                color: #ef4444; // Merah saat hover logout
+                color: #ef4444;
             }
         }
     }
 }
-// Main Content Wrapper
+
 .main-content {
-    margin-left: 280px; // Sesuai lebar sidebar
+    margin-left: 280px;
     padding: 2rem;
     min-height: 100vh;
-    background-color: #f3f4f6; // gray-100
+    background-color: #f3f4f6;
     transition: margin-left 0.3s ease;
 }
 
-// Styling Card (Modern)
 .card {
     border: none;
     border-radius: 1rem;
@@ -255,14 +191,10 @@ $indigo-200: #c7d2fe;
     }
 }
 
-// ... (Kode styling sidebar yang sudah ada di atas biarkan saja) ...
-
-// === RESPONSIF MOBILE (Bagian ini yang Perlu Diupdate) ===
+// === RESPONSIF MOBILE ===
 @media (max-width: 991.98px) {
-    
-    /* 1. Sidebar Sembunyi ke Kiri */
     .sidebar-wrapper {
-        transform: translateX(-100%); // Sembunyikan ke kiri
+        transform: translateX(-100%);
         transition: transform 0.3s ease-in-out;
     }
     .main-content {
@@ -271,53 +203,37 @@ $indigo-200: #c7d2fe;
     
     body.sidebar-open .sidebar-wrapper {
         transform: translateX(0);
-    }
-
-    // Class toggler untuk menampilkan sidebar di mobile
-    .sidebar-toggled .sidebar-wrapper {
-        margin-left: 0;
-    }
-    
-    // Overlay saat sidebar muncul di mobile
-    .sidebar-overlay {
-        display: none; /* Default mati */
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background-color: rgba(0, 0, 0, 0.5); // Hitam transparan
-        z-index: 999; // Di bawah sidebar (1000)
-        backdrop-filter: blur(2px); // Efek blur dikit (opsional)
-        
-        // Default sembunyi
-        visibility: hidden;
-        opacity: 0;
-        transition: all 0.3s ease-in-out;
-    }
-
-    // === STATE KETIKA SIDEBAR DIBUKA (sidebar-open) ===
-    
-    // Saat body punya class 'sidebar-open', sidebar masuk ke layar
-    body.sidebar-open .sidebar-wrapper {
-        transform: translateX(0);
         box-shadow: 10px 0 15px -3px rgba(0, 0, 0, 0.1);
     }
-
-    // Saat body punya class 'sidebar-open', overlay muncul
+    
     body.sidebar-open .sidebar-overlay {
         visibility: visible;
         opacity: 1;
     }
     
-    // Kunci scroll body saat sidebar terbuka
     body.sidebar-open {
         overflow: hidden;
     }
+
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        backdrop-filter: blur(2px);
+        visibility: hidden;
+        opacity: 0;
+        transition: all 0.3s ease-in-out;
+    }
 }
 
+// === HALAMAN LOGIN ===
 .login-page {
-    background-color: #312e81; // Indigo 900
+    background-color: #312e81;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -329,20 +245,18 @@ $indigo-200: #c7d2fe;
         width: 100%;
         max-width: 450px;
         background: white;
-        border-radius: 1.5rem; // Rounded-3xl
+        border-radius: 1.5rem;
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         overflow: hidden;
         border: none;
 
-        // Bagian Header Biru
         .login-header {
-            background-color: #4f46e5; // Indigo 600
+            background-color: #4f46e5;
             padding: 3rem 2rem 2.5rem;
             text-align: center;
             color: white;
             position: relative;
 
-            // Efek Lengkungan SVG Background
             .header-bg {
                 position: absolute;
                 top: 0;
@@ -353,7 +267,6 @@ $indigo-200: #c7d2fe;
                 pointer-events: none;
             }
 
-            // Kotak Logo Putih
             .logo-box {
                 width: 80px;
                 height: 80px;
@@ -363,7 +276,6 @@ $indigo-200: #c7d2fe;
                 align-items: center;
                 justify-content: center;
                 color: #4f46e5;
-                // font-size: 2.5rem; // Ukuran Icon
                 margin-bottom: 1.5rem;
                 box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
                 transform: rotate(-6deg);
@@ -374,26 +286,24 @@ $indigo-200: #c7d2fe;
                 }
 
                 img {
-                width: 65%;       // Ukuran logo di dalam kotak
-                height: auto;     // Tinggi menyesuaikan proporsi
-                object-fit: contain;
-                filter: drop-shadow(0 4px 3px rgba(0,0,0,0.1)); // Efek bayangan pada logonya
+                    width: 65%;
+                    height: auto;
+                    object-fit: contain;
+                    filter: drop-shadow(0 4px 3px rgba(0,0,0,0.1));
                 }
-
             }
 
             h4 { font-weight: 700; margin-bottom: 0.25rem; }
             p { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.8; margin: 0; }
         }
 
-        // Bagian Form Body
         .login-body {
             padding: 2.5rem;
 
             label {
                 font-size: 0.75rem;
                 font-weight: 700;
-                color: #9ca3af; // Gray 400
+                color: #9ca3af;
                 text-transform: uppercase;
                 letter-spacing: 0.05em;
                 margin-bottom: 0.5rem;
@@ -413,10 +323,10 @@ $indigo-200: #c7d2fe;
                 }
 
                 .form-control {
-                    padding: 0.8rem 1rem 0.8rem 3rem; // Padding kiri besar buat icon
-                    background-color: #f9fafb; // Gray 50
+                    padding: 0.8rem 1rem 0.8rem 3rem;
+                    background-color: #f9fafb;
                     border: 1px solid #f3f4f6;
-                    border-radius: 1rem; // Rounded-2xl
+                    border-radius: 1rem;
                     font-size: 0.95rem;
                     color: #1f2937;
                     transition: all 0.2s;
@@ -450,4 +360,66 @@ $indigo-200: #c7d2fe;
             }
         }
     }
+} // <--- PENUTUP LOGIN PAGE
+
+// === STYLE UNTUK MODAL QR (GLOBAL) ===
+// --- Dipindahkan keluar dari login-page agar terbaca di dashboard ---
+
+.qr-card {
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    background-color: #312e81; /* Indigo 900 */
+    color: white;
+}
+
+.qr-header {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.icon-box {
+    width: 5rem; 
+    height: 5rem;
+    background-color: white;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    color: #312e81;
+    font-size: 2.5rem;
+}
+
+.qr-body {
+    background-color: white;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.qr-frame {
+    padding: 1rem;
+    background-color: #f9fafb;
+    border: 2px dashed #e5e7eb;
+    border-radius: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.qr-footer {
+    background-color: #3730a3; /* Indigo 800 */
+    padding: 1rem;
+    text-align: center;
+}
+
+/* Efek Backdrop Blur untuk Modal Bootstrap */
+.modal-backdrop.show {
+    opacity: 0.7;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }

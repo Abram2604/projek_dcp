@@ -3,6 +3,7 @@ import * as bootstrap from 'bootstrap';
 import jQuery from 'jquery';
 
 window.$ = window.jQuery = jQuery;
+window.bootstrap = bootstrap;
 
 document.addEventListener('DOMContentLoaded', function () {
     // 1. Definisi Elemen
