@@ -1,27 +1,30 @@
 import './bootstrap';
 import * as bootstrap from 'bootstrap';
 import jQuery from 'jquery';
-window.$ = window.jQuery = jQuery; 
 
-// Logic untuk Toggle Sidebar di Mobile
+window.$ = window.jQuery = jQuery;
+
 document.addEventListener('DOMContentLoaded', function () {
+    // 1. Definisi Elemen
     const sidebarToggle = document.getElementById('sidebarToggle');
     const body = document.body;
+    
+    // 2. Buat Elemen Overlay Secara Dinamis
     const overlay = document.createElement('div');
     overlay.className = 'sidebar-overlay';
-    
-    // Pasang overlay ke body
     body.appendChild(overlay);
 
+    // 3. Logic Tombol Hamburger
     if (sidebarToggle) {
         sidebarToggle.addEventListener('click', function (e) {
             e.preventDefault();
-            body.classList.toggle('sidebar-toggled');
+            // Kita pakai class 'sidebar-open' agar konsisten dengan SCSS
+            body.classList.toggle('sidebar-open'); 
         });
     }
 
-    // Tutup sidebar jika overlay diklik (Mobile)
+    // 4. Logic Tutup Sidebar saat klik Overlay (Background gelap)
     overlay.addEventListener('click', function () {
-        body.classList.remove('sidebar-toggled');
+        body.classList.remove('sidebar-open');
     });
 });
