@@ -255,55 +255,30 @@ $indigo-200: #c7d2fe;
     }
 }
 
-// Mobile Responsiveness
+// ... (Kode styling sidebar yang sudah ada di atas biarkan saja) ...
+
+// === RESPONSIF MOBILE (Bagian ini yang Perlu Diupdate) ===
 @media (max-width: 991.98px) {
     
     /* 1. Sidebar Sembunyi ke Kiri */
     .sidebar-wrapper {
-        transform: translateX(-100%);
-        width: 280px;
-        /* TAMBAHAN PENTING: Z-Index harus paling tinggi (di atas overlay) */
-        z-index: 2000 !important; 
+        transform: translateX(-100%); // Sembunyikan ke kiri
+        transition: transform 0.3s ease-in-out;
     }
-
-    /* 2. Konten Utama Full Width */
     .main-content {
-        margin-left: 0 !important; /* Hapus margin kiri */
-        padding: 20px 15px; /* Padding lebih kecil untuk HP */
-    }
-
-    /* 3. Tampilkan Tombol Toggle */
-    #sidebarToggle {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 45px;
-        height: 45px;
-        border-radius: 12px;
-        background: white;
-        color: #1e1b4b;
-        border: none;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        font-size: 20px;
-        transition: 0.2s;
+        margin-left: 0;
     }
     
-    #sidebarToggle:active {
-        background: #f3f4f6;
-        transform: scale(0.95);
+    body.sidebar-open .sidebar-wrapper {
+        transform: translateX(0);
     }
 
-    /* 4. SAAT SIDEBAR DIBUKA (Class ditambahkan via JS) */
-    body.sidebar-toggled {
-        overflow: hidden; /* Matikan scroll body saat menu buka */
+    // Class toggler untuk menampilkan sidebar di mobile
+    .sidebar-toggled .sidebar-wrapper {
+        margin-left: 0;
     }
-
-    body.sidebar-toggled .sidebar-wrapper {
-        transform: translateX(0); /* Munculkan Sidebar */
-        box-shadow: 5px 0 30px rgba(0,0,0,0.5); /* Bayangan tebal */
-    }
-
-    /* 5. OVERLAY HITAM (Latar belakang gelap) */
+    
+    // Overlay saat sidebar muncul di mobile
     .sidebar-overlay {
         display: none; /* Default mati */
         position: fixed;
@@ -311,20 +286,34 @@ $indigo-200: #c7d2fe;
         left: 0;
         width: 100vw;
         height: 100vh;
-        background: rgba(0, 0, 0, 0.6); /* Hitam transparan */
-        z-index: 1040; /* Di bawah sidebar, di atas konten */
-        backdrop-filter: blur(2px); /* Efek blur estetik */
+        background-color: rgba(0, 0, 0, 0.5); // Hitam transparan
+        z-index: 999; // Di bawah sidebar (1000)
+        backdrop-filter: blur(2px); // Efek blur dikit (opsional)
+        
+        // Default sembunyi
+        visibility: hidden;
+        opacity: 0;
+        transition: all 0.3s ease-in-out;
     }
 
-    body.sidebar-toggled .sidebar-overlay {
-        display: block; /* Nyala saat menu buka */
-        animation: fadeIn 0.3s;
+    // === STATE KETIKA SIDEBAR DIBUKA (sidebar-open) ===
+    
+    // Saat body punya class 'sidebar-open', sidebar masuk ke layar
+    body.sidebar-open .sidebar-wrapper {
+        transform: translateX(0);
+        box-shadow: 10px 0 15px -3px rgba(0, 0, 0, 0.1);
     }
-}
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    // Saat body punya class 'sidebar-open', overlay muncul
+    body.sidebar-open .sidebar-overlay {
+        visibility: visible;
+        opacity: 1;
+    }
+    
+    // Kunci scroll body saat sidebar terbuka
+    body.sidebar-open {
+        overflow: hidden;
+    }
 }
 
 .login-page {
