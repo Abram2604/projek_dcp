@@ -8,6 +8,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Middleware\CekAksesManajemen;
 use App\Http\Controllers\KeuanganController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\NotifikasiController;
+
 
 // 1. Route Login & Logout
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');

@@ -60,6 +60,9 @@
                         </div>
                     @endif
                 </div>
+                 <a href="{{ route('notifikasi.index') }}" class="d-block p-2 text-center small fw-bold text-decoration-none bg-light border-top text-primary rounded-bottom hover-bg-gray">
+                    Lihat Semua Notifikasi
+                </a>
             </div>
         </div>
         <!-- AKHIR NOTIFIKASI -->

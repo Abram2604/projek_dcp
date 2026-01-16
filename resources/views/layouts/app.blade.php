@@ -10,9 +10,6 @@
     <!-- 1. FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Bootstrap JS (Wajib untuk Dropdown & Modal) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
     <!-- Load SCSS & JS via Vite -->
     
     <!-- 2. Vite (Load CSS & JS) -->
@@ -36,7 +33,7 @@
     </main>
 
     <!-- 7. Script Bootstrap (Taruh di bawah agar loading cepat) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>
