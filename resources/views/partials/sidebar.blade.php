@@ -1,6 +1,9 @@
 <aside class="sidebar-wrapper">
     <!-- 1. HEADER -->
     <div class="sidebar-header">
+          <button id="sidebarClose" class="btn btn-link text-white d-lg-none p-0 border-0">
+        <i class="fa-solid fa-xmark fa-xl"></i>
+    </button>
         <div class="logo-box">
             <!-- Ganti dengan <img> jika ada logo.png, atau pakai icon -->
             <img src="{{ asset('img/logo.png') }}" alt="Logo SPSI" style="width: 70%; height: auto;">
@@ -10,6 +13,7 @@
             <p>SPSI KARAWANG</p>
         </div>
     </div>
+       
 
     <!-- 2. MENU -->
     <nav class="sidebar-menu">

@@ -19,7 +19,7 @@ Route::middleware('auth')->group(function () {
     
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/absensi', function () { return view('absensi.index'); });
-    
+     Route::get('/notifikasi', [NotifikasiController::class, 'index'])->name('notifikasi.index');
     // Laporan
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
     Route::post('/laporan', [LaporanController::class, 'store'])->name('laporan.store');
