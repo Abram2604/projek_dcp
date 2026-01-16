@@ -10,15 +10,17 @@
     <!-- 1. FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Bootstrap JS (Wajib untuk Dropdown & Modal) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Load SCSS & JS via Vite -->
+    
     <!-- 2. Vite (Load CSS & JS) -->
     @vite(['resources/css/app.scss', 'resources/js/app.js'])
 </head>
 <body>
 
-    <!-- 3. Overlay untuk Mobile (Wajib ada biar sidebar bisa nutup pas klik luar) -->
-    <div class="sidebar-overlay"></div>
-
-    <!-- 4. Panggil Sidebar -->
+    <!-- Panggil Sidebar -->
     @include('partials.sidebar')
 
     <main class="main-content">
@@ -29,6 +31,7 @@
 
         <!-- 6. Konten Halaman -->
         @yield('content')
+        
         
     </main>
 
