@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('header_title', 'Manajemen Anggota')
+@section('header_title', 'Manajemen User')
 @section('header_subtitle', 'Kelola akun, hak akses, dan data personil.')
 
 @section('content')

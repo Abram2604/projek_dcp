@@ -62,11 +62,16 @@
         </a>
         @endif
 
+        <a href="{{ route('data_anggota.index') }}" class="nav-item {{ Request::is('data-anggota*') ? 'active' : '' }}">
+            <i class="fa-solid fa-database"></i>
+            <span>Data Anggota</span>
+        </a>
+
         <!-- Users (BPH & Organisasi) -->
         @if($isBPH || $isOrg)
         <a href="{{ url('/users') }}" class="nav-item {{ Request::is('users*') ? 'active' : '' }}">
             <i class="fa-solid fa-users"></i>
-            <span>Manajemen Anggota</span>
+            <span>Manajemen User</span>
         </a>
         @endif
     </nav>

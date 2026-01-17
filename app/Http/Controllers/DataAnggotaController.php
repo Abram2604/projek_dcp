@@ -1,0 +1,108 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+
+class DataAnggotaController extends Controller
+{
+    public function index(Request $request)
+    {
+        $search = $request->input('search');
+        
+        // 1. Ambil Data PUK
+        $dataPuk = DB::select('CALL sp_puk_list(?)', [$search]);
+        
+        // 2. Hitung Total (Untuk Footer Tabel)
+        // Kita hitung berdasarkan kolom 'jumlah_anggota' (data real)
+        $totalAnggota = 0;
+        foreach($dataPuk as $p) {
+            $totalAnggota += $p->jumlah_anggota;
+        }
+
+        // 3. Ambil Data Tanda Tangan (Row pertama)
+        $ttd = DB::table('Pengaturan_Tanda_Tangan')->first();
+
+        // 4. Cek Akses (Hanya Ketua, Sekretaris, atau level BPH yang bisa edit)
+        $jabatan = session('user_jabatan');
+        $canEdit = ($jabatan === 'Ketua DPC' || $jabatan === 'Sekretaris' || session('user_level') === 'BPH');
+
+        return view('pages.data_anggota.index', compact('dataPuk', 'totalAnggota', 'canEdit', 'search', 'ttd'));
+    }
+
+    public function store(Request $request)
+    {
+        // Validasi Input
+        $request->validate([
+            'nama_perusahaan' => 'required|string',
+            'jumlah_anggota' => 'required|integer',
+            'manual_total_anggota' => 'nullable|integer' // Validasi untuk kolom baru
+        ]);
+
+        // Panggil SP Create dengan 10 Parameter (termasuk manual_total_anggota)
+        DB::statement('CALL sp_puk_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+            $request->nama_perusahaan,
+            $request->no_pencatatan,
+            $request->jumlah_anggota,
+            $request->hasil_verifikasi ?? 0,
+            $request->nama_federasi,
+            $request->no_pencatatan_federasi,
+            $request->afiliasi ?? 'KSPSI',
+            $request->nama_ketua,
+            $request->nama_sekretaris,
+            $request->manual_total_anggota // Parameter ke-10 (Baru)
+        ]);
+
+        return redirect()->back()->with('success', 'Data PUK berhasil ditambahkan.');
+    }
+
+    public function update(Request $request, $id)
+    {
+        // Validasi Input
+        $request->validate([
+            'nama_perusahaan' => 'required', 
+            'jumlah_anggota' => 'required',
+            'manual_total_anggota' => 'nullable|integer' // Validasi untuk kolom baru
+        ]);
+
+        // Panggil SP Update dengan 11 Parameter (ID + 10 Data)
+        DB::statement('CALL sp_puk_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+            $id,
+            $request->nama_perusahaan,
+            $request->no_pencatatan,
+            $request->jumlah_anggota,
+            $request->hasil_verifikasi ?? 0,
+            $request->nama_federasi,
+            $request->no_pencatatan_federasi,
+            $request->afiliasi ?? 'KSPSI',
+            $request->nama_ketua,
+            $request->nama_sekretaris,
+            $request->manual_total_anggota // Parameter Terakhir (Baru)
+        ]);
+
+        return redirect()->back()->with('success', 'Data PUK berhasil diperbarui.');
+    }
+    
+    public function destroy($id)
+    {
+        DB::statement('CALL sp_puk_delete(?)', [$id]);
+        return redirect()->back()->with('success', 'Data PUK dihapus.');
+    }
+
+    // Fungsi Update Tanda Tangan
+    public function updateTtd(Request $request)
+    {
+        DB::table('Pengaturan_Tanda_Tangan')->where('id', 1)->update([
+            'kadis_nama' => $request->kadis_nama,
+            'kadis_nip' => $request->kadis_nip,
+            'ketua_nama' => $request->ketua_nama,
+            'sekretaris_nama' => $request->sekretaris_nama,
+            'kota_surat' => $request->kota_surat,
+            'updated_at' => now()
+        ]);
+
+        return redirect()->back()->with('success', 'Format tanda tangan berhasil diperbarui.');
+    }
+}
