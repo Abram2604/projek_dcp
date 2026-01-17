@@ -1,6 +1,9 @@
 <aside class="sidebar-wrapper">
     <!-- 1. HEADER -->
     <div class="sidebar-header">
+          <button id="sidebarClose" class="btn btn-link text-white d-lg-none p-0 border-0">
+        <i class="fa-solid fa-xmark fa-xl"></i>
+    </button>
         <div class="logo-box">
             <!-- Ganti dengan <img> jika ada logo.png, atau pakai icon -->
             <img src="{{ asset('img/logo.png') }}" alt="Logo SPSI" style="width: 70%; height: auto;">
@@ -10,6 +13,7 @@
             <p>SPSI KARAWANG</p>
         </div>
     </div>
+       
 
     <!-- 2. MENU -->
     <nav class="sidebar-menu">
@@ -44,6 +48,11 @@
             <i class="fa-solid fa-chart-line"></i>
             <span>Program Kerja</span>
         </a>
+        
+        <a href="{{ route('profile') }}" class="nav-item {{ Request::is('profile*') ? 'active' : '' }}">
+            <i class="fa-solid fa-id-card"></i>
+            <span>Profil Saya</span>
+        </a>
 
         <!-- Keuangan (Hanya BPH) -->
         @if($isBPH)
@@ -53,11 +62,33 @@
         </a>
         @endif
 
-        <!-- Users (BPH & Organisasi) -->
-        @if($isBPH || $isOrg)
+        @php
+            $userJabatan = session('user_jabatan'); // Ambil jabatan dari session login
+            $isPimpinan  = ($userJabatan === 'Ketua DPC' || $userJabatan === 'Sekretaris');
+        @endphp
+
+        @if($isPimpinan)
+        <a href="{{ route('data_anggota.index') }}" class="nav-item {{ Request::is('data-anggota*') ? 'active' : '' }}">
+            <i class="fa-solid fa-database"></i>
+            <span>Data Anggota</span>
+        </a>
+        @endif
+
+
+        <!-- Users (Ketua, Sekretaris & Organisasi) -->
+        @php
+            $jabatan = session('user_jabatan');
+            // Cek apakah jabatannya mengandung kata "Organisasi"
+            $isOrg   = str_contains($jabatan, 'Organisasi'); 
+            
+            // Cek spesifik jabatan (Bendahara tidak masuk disini)
+            $canManageUser = ($jabatan === 'Ketua DPC' || $jabatan === 'Sekretaris' || $isOrg);
+        @endphp
+
+        @if($canManageUser)
         <a href="{{ url('/users') }}" class="nav-item {{ Request::is('users*') ? 'active' : '' }}">
-            <i class="fa-solid fa-users"></i>
-            <span>Manajemen Anggota</span>
+            <i class="fa-solid fa-users-gear"></i>
+            <span>Manajemen User</span>
         </a>
         @endif
     </nav>

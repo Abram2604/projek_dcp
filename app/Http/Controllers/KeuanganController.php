@@ -77,6 +77,12 @@ class KeuanganController extends Controller
                     $saldoValue,
                     $userId,
                 ]);
+                 DB::statement('CALL sp_notifikasi_saldo_divisi(?, ?, ?, ?)', [
+                    (int) $divisiId,
+                    $bulan,
+                    $tahun,
+                    $saldoValue
+                ]);
             }
             DB::commit();
         } catch (\Exception $e) {
