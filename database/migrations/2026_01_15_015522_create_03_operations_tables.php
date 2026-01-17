@@ -37,7 +37,7 @@ return new class extends Migration
             $table->enum('sumber_absensi', ['QR_DINDING', 'HP_MOBILE', 'INPUT_MANUAL', 'SYSTEM_GENERATED'])->default('QR_DINDING');
             $table->string('keterangan_tambahan', 255)->nullable();
             $table->dateTime('dibuat_pada')->useCurrent();
-
+            $table->string('url_bukti', 255)->nullable();
             $table->foreign('id_anggota')->references('id')->on('Anggota')->onDelete('cascade');
             $table->unique(['id_anggota', 'tanggal'], 'UQ_Absensi_Harian');
         });
