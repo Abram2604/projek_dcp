@@ -42,15 +42,13 @@ Route::middleware('auth')->group(function () {
         ->name('keuangan.saldo_awal')
         ->middleware('role:BPH');
 
-    Route::get('/data-anggota', [DataAnggotaController::class, 'index'])->name('data_anggota.index');
-    Route::post('/data-anggota', [DataAnggotaController::class, 'store'])->name('data_anggota.store');
-    
-    // Route Update & Delete
-    Route::put('/data-anggota/{id}', [DataAnggotaController::class, 'update'])->name('data_anggota.update');
-    Route::delete('/data-anggota/{id}', [DataAnggotaController::class, 'destroy'])->name('data_anggota.destroy');
-    
-    // Route Update Tanda Tangan
-    Route::post('/data-anggota/ttd', [DataAnggotaController::class, 'updateTtd'])->name('data_anggota.ttd');
+    Route::middleware(['auth', 'akses.puk'])->group(function () {
+        Route::get('/data-anggota', [DataAnggotaController::class, 'index'])->name('data_anggota.index');
+        Route::post('/data-anggota', [DataAnggotaController::class, 'store'])->name('data_anggota.store');
+        Route::put('/data-anggota/{id}', [DataAnggotaController::class, 'update'])->name('data_anggota.update');
+        Route::delete('/data-anggota/{id}', [DataAnggotaController::class, 'destroy'])->name('data_anggota.destroy');
+        Route::post('/data-anggota/ttd', [DataAnggotaController::class, 'updateTtd'])->name('data_anggota.ttd');
+    });
  
 
     // === MANAJEMEN ANGGOTA (Users) ===

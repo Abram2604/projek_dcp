@@ -62,15 +62,32 @@
         </a>
         @endif
 
+        @php
+            $userJabatan = session('user_jabatan'); // Ambil jabatan dari session login
+            $isPimpinan  = ($userJabatan === 'Ketua DPC' || $userJabatan === 'Sekretaris');
+        @endphp
+
+        @if($isPimpinan)
         <a href="{{ route('data_anggota.index') }}" class="nav-item {{ Request::is('data-anggota*') ? 'active' : '' }}">
             <i class="fa-solid fa-database"></i>
             <span>Data Anggota</span>
         </a>
+        @endif
 
-        <!-- Users (BPH & Organisasi) -->
-        @if($isBPH || $isOrg)
+
+        <!-- Users (Ketua, Sekretaris & Organisasi) -->
+        @php
+            $jabatan = session('user_jabatan');
+            // Cek apakah jabatannya mengandung kata "Organisasi"
+            $isOrg   = str_contains($jabatan, 'Organisasi'); 
+            
+            // Cek spesifik jabatan (Bendahara tidak masuk disini)
+            $canManageUser = ($jabatan === 'Ketua DPC' || $jabatan === 'Sekretaris' || $isOrg);
+        @endphp
+
+        @if($canManageUser)
         <a href="{{ url('/users') }}" class="nav-item {{ Request::is('users*') ? 'active' : '' }}">
-            <i class="fa-solid fa-users"></i>
+            <i class="fa-solid fa-users-gear"></i>
             <span>Manajemen User</span>
         </a>
         @endif
