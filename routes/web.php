@@ -71,6 +71,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/keuangan/saldo-awal', [KeuanganController::class, 'storeSaldoAwal'])
         ->name('keuangan.saldo_awal')
         ->middleware('role:BPH');
+    Route::post('/keuangan/pemasukan', [KeuanganController::class, 'storePemasukan'])
+        ->name('keuangan.pemasukan')
+        ->middleware('role:BPH');
 
     Route::middleware(['auth', 'akses.puk'])->group(function () {
         Route::get('/data-anggota', [DataAnggotaController::class, 'index'])->name('data_anggota.index');

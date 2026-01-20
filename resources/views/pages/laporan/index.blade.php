@@ -149,7 +149,7 @@
                     $oldItems = [];
                     $totalOld = 0;
                     $maxOld = max(count($oldDescriptions), count($oldVolumes), count($oldUnits), count($oldAmounts));
-                    for ($i = 0; $i < $maxOld; $i++) {
+                    for ($i = 0; $i < $maxOld; $i++) {<!--  -->
                         $desc = trim((string) ($oldDescriptions[$i] ?? ''));
                         $amount = (float) ($oldAmounts[$i] ?? 0);
                         $volume = (float) ($oldVolumes[$i] ?? 1);
