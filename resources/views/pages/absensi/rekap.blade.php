@@ -1,90 +1,137 @@
 @extends('layouts.app')
 
 @section('title', 'Rekapitulasi')
-@section('header_title', 'Attendance')
-@section('header_subtitle', 'Rekapitulasi absensi dan insentif pengurus.')
+@section('header_title', 'Rekapitulasi')
+@section('header_subtitle', 'Data absensi dan perhitungan insentif.')
 
 @section('content')
 
-<!-- CSS IMPROVEMENT -->
+<!-- CSS STYLE -->
 <style>
-    /* Button Colors Fix */
+    /* Button Colors */
     .btn-info, .btn-primary, .btn-success, .btn-danger, .bg-indigo { color: #ffffff !important; }
     
-    /* Table Styles */
+    /* Table Styles (Compact) */
     .table-rekap { border-collapse: separate; border-spacing: 0; width: 100%; border: 1px solid #e5e7eb; font-size: 0.8rem; }
-    .table-rekap th, .table-rekap td { border: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; vertical-align: middle; }
-    .thead-grey th { background-color: #f3f4f6; color: #374151; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; }
+    .table-rekap td { border: 1px solid #e5e7eb; padding: 6px 4px; text-align: center; vertical-align: middle; }
     
-    /* UX: Sticky Column untuk Matrix */
-    .table-responsive { max-height: 70vh; overflow: auto; }
-    .table-rekap thead th { position: sticky; top: 0; z-index: 10; border-top: 0; }
-    
-    /* Status Colors */
-    .row-holiday td { background-color: #ef4444 !important; color: white !important; font-weight: bold; border-color: #dc2626; }
-    .cell-dinas { background-color: #10b981 !important; color: white !important; font-weight: 700; }
-    .cell-lembur { background-color: #facc15 !important; color: #111827 !important; font-weight: 800; }
-    .cell-hadir { color: #374151; font-weight: 500; }
-    
-    /* Hover */
-    .table-rekap tbody tr:hover td { background-color: #f3f4f6; }
-    .table-rekap tbody tr:hover td.cell-lembur { background-color: #fbbf24 !important; }
-    .table-rekap tbody tr:hover td.cell-dinas { background-color: #059669 !important; }
-
-    /* Legend Box Style */
-    .legend-box {
-        width: 24px; height: 24px; 
-        border-radius: 6px; 
-        border: 1px solid #e5e7eb; 
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
+    /* FIX: HEADER TABEL SOLID & STICKY */
+    .table-rekap th, .thead-grey th { 
+        background-color: #f3f4f6 !important; /* Warna Solid Abu-abu */
+        color: #374151; 
         font-weight: 700; 
-        font-size: 0.7rem;
-        margin-right: 8px;
+        text-transform: uppercase; 
+        font-size: 0.75rem; 
+        padding: 8px 4px;
+        text-align: center;
+        vertical-align: middle;
+        border: 1px solid #e5e7eb;
+        position: sticky;
+        top: 0;
+        z-index: 100; /* Pastikan di atas konten tbody */
+        box-shadow: 0 1px 0 #d1d5db; /* Garis bawah header */
     }
+
+    .table-responsive { max-height: 70vh; overflow: auto; }
+    
+    /* Sticky First Columns (Untuk Kolom Nama/No) */
+    .sticky-col { 
+        position: sticky; 
+        left: 0; 
+        background-color: #ffffff !important; /* Solid White */
+        z-index: 101 !important; /* Lebih tinggi dari header biasa tapi di bawah header sticky */
+        border-right: 2px solid #e5e7eb !important;
+    }
+    
+    /* Header Pojok Kiri Atas (Pertemuan Sticky Top & Sticky Left) */
+    .thead-grey th.sticky-col {
+        z-index: 105 !important; /* Paling atas */
+        background-color: #f3f4f6 !important;
+    }
+
+    /* Colors */
+    .row-holiday td { background-color: #fef2f2 !important; color: #dc2626 !important; font-weight: bold; border-color: #fca5a5; }
+    .cell-dinas { background-color: #dcfce7 !important; color: #166534 !important; font-weight: 700; }
+    .cell-lembur { background-color: #fef9c3 !important; color: #854d0e !important; font-weight: 700; }
+    .cell-hadir { color: #111827; }
+    
+    /* Unified Nav Style (Sama dengan Index) */
+    .nav-container {
+        background-color: #ffffff;
+        padding: 0.5rem;
+        border-radius: 50rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #f3f4f6;
+        display: inline-flex;
+        gap: 0.5rem;
+    }
+    .nav-pills-custom .nav-link {
+        border-radius: 50rem;
+        padding: 0.5rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #64748b;
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .nav-pills-custom .nav-link:hover { background-color: #f1f5f9; color: #334155; }
+    .nav-pills-custom .nav-link.active { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3); }
 </style>
 
 {{-- 1. TAB MENU UTAMA --}}
 <div class="mb-4">
-    <div class="bg-white p-2 rounded-2xl shadow-sm d-inline-block border border-light">
+    <div class="nav-container">
         <ul class="nav nav-pills nav-pills-custom">
-            <li class="nav-item"><a href="{{ route('absensi.index', ['tab' => 'qr']) }}" class="nav-link text-muted">Scan QR</a></li>
-            <li class="nav-item"><a href="{{ route('absensi.index', ['tab' => 'dinas']) }}" class="nav-link text-muted">Absen Dinas</a></li>
-            <li class="nav-item"><a href="{{ route('absensi.index', ['tab' => 'izin']) }}" class="nav-link text-muted">Izin/Sakit</a></li>
-            <li class="nav-item"><a href="#" class="nav-link active bg-indigo text-white shadow-sm">Rekap (BPH)</a></li>
+            <li class="nav-item">
+                <a href="{{ route('absensi.index', ['tab' => 'qr']) }}" class="nav-link">
+                    <i class="fa-solid fa-qrcode"></i> Scan QR
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('absensi.index', ['tab' => 'dinas']) }}" class="nav-link">
+                    <i class="fa-solid fa-briefcase"></i> Absen Dinas
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('absensi.index', ['tab' => 'izin']) }}" class="nav-link">
+                    <i class="fa-solid fa-file-medical"></i> Izin/Sakit
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link active">
+                    <i class="fa-solid fa-chart-pie"></i> Rekap (BPH)
+                </a>
+            </li>
         </ul>
     </div>
 </div>
 
 {{-- 2. NAVIGASI BULAN & SUB-MENU TAMPILAN --}}
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
-    <!-- A. Navigasi Bulan -->
-    <div class="d-flex align-items-center bg-white rounded-pill shadow-sm border px-1 py-1">
+    <!-- Navigasi Bulan -->
+    <div class="d-flex align-items-center bg-white rounded-pill shadow-sm border px-2 py-1">
         <a href="{{ route('absensi.rekap', ['bulan' => $prevDate->month, 'tahun' => $prevDate->year, 'view' => request('view')]) }}" 
-           class="btn btn-light rounded-circle text-muted" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
+           class="btn btn-sm btn-light rounded-circle text-muted">
             <i class="fa-solid fa-chevron-left"></i>
         </a>
-        <span class="fw-bold text-dark mx-4 text-uppercase" style="min-width: 120px; text-align: center;">{{ $startDate->isoFormat('MMMM Y') }}</span>
+        <span class="fw-bold text-dark mx-3 fs-7 text-uppercase" style="min-width: 100px; text-align: center;">{{ $startDate->isoFormat('MMMM Y') }}</span>
         <a href="{{ route('absensi.rekap', ['bulan' => $nextDate->month, 'tahun' => $nextDate->year, 'view' => request('view')]) }}" 
-           class="btn btn-light rounded-circle text-muted" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
+           class="btn btn-sm btn-light rounded-circle text-muted">
             <i class="fa-solid fa-chevron-right"></i>
         </a>
     </div>
 
-    <!-- B. Sub-Menu Pilihan Tampilan -->
-    @php $currView = request('view', 'matrix'); @endphp
-    <div class="bg-light p-1 rounded-3xl d-inline-flex border border-gray-200">
+    <!-- View Switcher -->
+    <div class="bg-light p-1 rounded-pill d-inline-flex border border-gray-200">
         <a href="{{ route('absensi.rekap', ['view' => 'matrix', 'bulan' => $startDate->month, 'tahun' => $startDate->year]) }}" 
-           class="btn btn-sm px-3 rounded-3xl fw-bold {{ $currView == 'matrix' ? 'bg-white text-indigo shadow-sm' : 'text-muted' }}">
+           class="btn btn-sm px-3 rounded-pill fw-bold {{ $currView == 'matrix' ? 'bg-white text-indigo shadow-sm' : 'text-muted' }}">
             Absensi Harian
         </a>
         <a href="{{ route('absensi.rekap', ['view' => 'incentive', 'bulan' => $startDate->month, 'tahun' => $startDate->year]) }}" 
-           class="btn btn-sm px-3 rounded-3xl fw-bold {{ $currView == 'incentive' ? 'bg-white text-indigo shadow-sm' : 'text-muted' }}">
+           class="btn btn-sm px-3 rounded-pill fw-bold {{ $currView == 'incentive' ? 'bg-white text-indigo shadow-sm' : 'text-muted' }}">
             Insentif Bulanan
         </a>
         <a href="{{ route('absensi.rekap', ['view' => 'monitoring', 'bulan' => $startDate->month, 'tahun' => $startDate->year]) }}" 
-           class="btn btn-sm px-3 rounded-3xl fw-bold {{ $currView == 'monitoring' ? 'bg-white text-indigo shadow-sm' : 'text-muted' }}">
+           class="btn btn-sm px-3 rounded-pill fw-bold {{ $currView == 'monitoring' ? 'bg-white text-indigo shadow-sm' : 'text-muted' }}">
             Monitoring Izin
         </a>
     </div>
@@ -92,20 +139,21 @@
 
 @if($currView == 'matrix')
     <!-- === VIEW 1: MATRIX HARIAN === -->
-    <div class="card border-0 shadow-soft rounded-2xl overflow-hidden animate-in fade-in">
-        <div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
+    <div class="card border-0 shadow-sm rounded-2xl overflow-hidden animate-in fade-in">
+        <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
             <div>
-                <h5 class="fw-bold text-dark text-uppercase mb-1">DPC FSP LEM SPSI KARAWANG</h5>
-                <small class="text-muted">Rekap Absensi Harian Pengurus • {{ $startDate->isoFormat('MMMM Y') }}</small>
+                <h6 class="fw-bold text-dark text-uppercase mb-0 fs-7">Matriks Absensi</h6>
+                <small class="text-muted fs-8">Rekap Harian • {{ $startDate->isoFormat('MMMM Y') }}</small>
             </div>
             <div class="d-flex gap-2">
-                <a href="{{ route('absensi.download_excel', ['bulan' => $startDate->month, 'tahun' => $startDate->year]) }}" 
+                <!-- EXPORT ABSENSI (TYPE = ABSENSI) -->
+                <a href="{{ route('absensi.download_excel', ['bulan' => $startDate->month, 'tahun' => $startDate->year, 'type' => 'absensi']) }}" 
                     class="btn btn-success btn-sm fw-bold px-3 rounded-3 shadow-sm text-white">
-                    <i class="fa-solid fa-file-excel me-2"></i>Excel
+                    <i class="fa-solid fa-file-excel me-1"></i> Excel Absensi
                 </a>
                 <a href="{{ route('absensi.download_pdf_rekap', ['bulan' => $startDate->month, 'tahun' => $startDate->year]) }}" 
                     class="btn btn-danger btn-sm fw-bold px-3 rounded-3 shadow-sm text-white">
-                    <i class="fa-solid fa-file-pdf me-2"></i>PDF
+                    <i class="fa-solid fa-file-pdf me-1"></i> PDF
                 </a>
             </div>
         </div>
@@ -113,11 +161,11 @@
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table-rekap mb-0">
-                    <thead class="thead-grey">
+                    <thead class="thead-grey sticky-top">
                         <tr>
-                            <th style="width: 40px; position: sticky; left: 0; z-index: 20;">NO</th>
-                            <th style="width: 80px; position: sticky; left: 40px; z-index: 20;">HARI</th>
-                            <th style="width: 120px; position: sticky; left: 120px; z-index: 20;">TANGGAL</th>
+                            <th class="sticky-col" style="min-width: 40px;">No</th>
+                            <th class="sticky-col" style="min-width: 50px; left: 40px !important;">Tgl</th>
+                            <th class="sticky-col" style="min-width: 80px; left: 90px !important;">Hari</th>
                             @foreach($anggota as $usr)
                                 <th style="min-width: 40px;" title="{{ $usr['nama'] }}">{{ $usr['inisial'] }}</th>
                             @endforeach
@@ -135,8 +183,8 @@
 
                             <tr class="{{ $rowClass }}">
                                 <td style="position: sticky; left: 0; background: inherit; z-index: 10;">{{ $date->day }}</td>
-                                <td style="position: sticky; left: 40px; background: inherit; z-index: 10;">{{ $date->isoFormat('dddd') }}</td>
-                                <td style="position: sticky; left: 120px; background: inherit; z-index: 10;" class="text-start ps-3">{{ $date->format('d M Y') }}</td>
+                                <td style="position: sticky; left: 40px; background: inherit; z-index: 10;" class="text-start ps-3">{{ $date->isoFormat('dddd') }}</td>
+                                <td style="position: sticky; left: 120px; background: inherit; z-index: 10;">{{ $date->format('d M Y') }}</td>
 
                                 @if($isHoliday)
                                     <td colspan="{{ count($anggota) }}" class="text-center text-uppercase" style="letter-spacing: 2px;">{{ $holidayName }}</td>
@@ -145,14 +193,11 @@
                                         @php
                                             $status = $matrixData[$dateString][$usr['id']] ?? '';
                                             $cellClass = ''; $display = '';
-                                            if ($isWeekend) {
-                                                if ($status == 'O') { $cellClass = 'cell-lembur'; $display = '1'; }
-                                                elseif ($status == 'D') { $cellClass = 'cell-dinas'; $display = '1'; }
-                                            } else {
-                                                if ($status == 'H') { $cellClass = 'cell-hadir'; $display = '1'; }
-                                                elseif ($status == 'O') { $cellClass = 'cell-lembur'; $display = '1'; }
-                                                elseif ($status == 'D') { $cellClass = 'cell-dinas'; $display = '1'; }
-                                            }
+                                            
+                                            if ($status == 'H') { $cellClass = 'cell-hadir'; $display = '1'; }
+                                            elseif ($status == 'O') { $cellClass = 'cell-lembur'; $display = '1'; }
+                                            elseif ($status == 'DL') { $cellClass = 'cell-dinas bg-success'; $display = '1'; } 
+                                            elseif ($status == 'DM') { $cellClass = 'cell-dinas bg-primary'; $display = '1'; }
                                         @endphp
                                         <td class="{{ $cellClass }}">{{ $display }}</td>
                                     @endforeach
@@ -163,95 +208,95 @@
                 </table>
             </div>
         </div>
-
-        {{-- LEGENDA MATRIX --}}
-        <div class="card-footer bg-white border-top p-3">
-            <h6 class="fw-bold small text-uppercase text-muted mb-2">Keterangan / Legenda:</h6>
-            <div class="d-flex flex-wrap gap-3">
-                <div class="d-flex align-items-center">
-                    <div class="legend-box cell-hadir">1</div>
-                    <span class="small text-muted">Hadir (Kantor)</span>
-                </div>
-                <div class="d-flex align-items-center">
-                    <div class="legend-box cell-lembur">1</div>
-                    <span class="small text-muted">Overtime (> 21.00)</span>
-                </div>
-                <div class="d-flex align-items-center">
-                    <div class="legend-box cell-dinas">1</div>
-                    <span class="small text-muted">Dinas Luar</span>
-                </div>
-                <div class="d-flex align-items-center">
-                    <div class="legend-box row-holiday">L</div>
-                    <span class="small text-muted">Libur/Minggu</span>
-                </div>
-                <div class="d-flex align-items-center">
-                    <div class="legend-box bg-white text-muted">X</div>
-                    <span class="small text-muted">Tidak Hadir / Ditolak</span>
-                </div>
+        
+        <div class="card-footer bg-light border-top p-3">
+            <div class="d-flex flex-wrap gap-3 small text-muted">
+                <span><span class="badge bg-white border text-dark me-1">1</span> Hadir</span>
+                <span><span class="badge bg-warning text-dark me-1">1</span> Lembur</span>
+                <span><span class="badge bg-success text-white me-1">1</span> Dinas</span>
+                <span><span class="badge bg-danger text-white me-1">LIBUR</span> Hari Libur</span>
             </div>
         </div>
     </div>
 
 @elseif($currView == 'incentive')
-    <!-- === VIEW 2: TABEL INSENTIF === -->
-    <div class="card border-0 shadow-soft rounded-2xl overflow-hidden mb-5 animate-in fade-in">
-        <div class="card-header bg-white p-4 d-flex justify-content-between align-items-center border-bottom">
-            <div class="d-flex align-items-center gap-3">
-                <div class="bg-indigo-50 p-2 rounded-3 text-indigo">
-                    <i class="fa-solid fa-wallet fs-4"></i>
-                </div>
-                <div>
-                    <h6 class="fw-bold text-uppercase mb-0 text-dark">Rekap Dana Kehadiran Pengurus</h6>
-                    <small class="text-muted fw-bold" style="font-size: 11px;">PERIODE: {{ $startDate->year }}</small>
-                </div>
-            </div>
+    <!-- === VIEW 2: TABEL INSENTIF DETAIL === -->
+    <div class="card border-0 shadow-sm rounded-2xl overflow-hidden mb-5 animate-in fade-in">
+        <div class="card-header bg-white p-3 d-flex justify-content-between align-items-center border-bottom">
             <div>
-                <a href="{{ route('absensi.download_excel', ['bulan' => $startDate->month, 'tahun' => $startDate->year]) }}"
-                    class="btn btn-success btn-sm fw-bold px-3 rounded-3 shadow-sm text-white">
-                    <i class="fa-solid fa-file-excel me-2"></i>Unduh Excel
-                </a>
+                <h6 class="fw-bold text-uppercase mb-0 text-dark fs-7">Rangkuman Insentif Bulanan</h6>
+                <small class="text-muted fw-bold fs-8">PERIODE: {{ $startDate->isoFormat('MMMM Y') }}</small>
             </div>
+            
+            <!-- EXPORT INSENTIF (TYPE = INSENTIF) -->
+            <a href="{{ route('absensi.download_excel', ['bulan' => $startDate->month, 'tahun' => $startDate->year, 'type' => 'insentif']) }}"
+                class="btn btn-primary btn-sm fw-bold px-3 rounded-3 shadow-sm text-white">
+                <i class="fa-solid fa-file-invoice-dollar me-1"></i> Export Insentif
+            </a>
         </div>
 
         <div class="table-responsive">
-            <table class="table table-bordered mb-0 align-middle" style="font-size: 0.8rem; border-color: #e5e7eb;">
-                <thead class="text-center text-uppercase align-middle bg-light">
+            <table class="table table-bordered mb-0 align-middle" style="font-size: 0.75rem; border-color: #e5e7eb;">
+                <thead class="align-middle bg-light text-dark fw-bold text-center text-uppercase">
                     <tr>
-                        <th rowspan="2" class="px-3 py-3 text-start bg-white" style="min-width: 200px;">Nama Pengurus</th>
-                        <th colspan="3" class="bg-white">Jumlah</th>
-                        <th rowspan="2" class="px-3 bg-white text-end" style="min-width: 120px;">Kehadiran</th>
-                        <th rowspan="2" class="px-3 text-end" style="min-width: 120px; background-color: #fcd34d;">Up 21.00 WIB</th>
-                        <th rowspan="2" class="px-3 text-end text-white" style="min-width: 120px; background-color: #10b981;">Dinas Luar</th>
-                        <th rowspan="2" class="px-3 bg-white text-end fw-bold" style="min-width: 140px;">Total/Orang</th>
-                        <th rowspan="2" class="fw-bold" style="background-color: #fcd34d;">Total OT</th>
-                        <th rowspan="2" class="fw-bold text-white" style="background-color: #10b981;">Total DL</th>
-                        <th rowspan="2" class="bg-light">Aksi</th>
+                        <th rowspan="2" style="min-width: 180px;" class="bg-white sticky-col start-0">NAMA PENGURUS</th>
+                        
+                        <!-- 1. Hadir -->
+                        <th colspan="3" class="bg-white border-bottom-0">KEHADIRAN (Rp 100rb)</th>
+                        
+                        <!-- 2. Lembur -->
+                        <th colspan="3" style="background-color: #fff7ed;">LEMBUR (>21.00) (Rp 50rb)</th>
+                        
+                        <!-- 3. Dinas Luar -->
+                        <th colspan="3" style="background-color: #ecfdf5;">DINAS LUAR (Rp 150rb)</th>
+
+                        <!-- 4. Dinas Menginap -->
+                        <th colspan="3" style="background-color: #eff6ff;">DINAS MENGINAP (Rp 300rb)</th>
+
+                        <th rowspan="2" class="bg-indigo text-white border-0" style="min-width: 110px;">TOTAL TERIMA</th>
+                        <th rowspan="2" class="bg-white" style="min-width: 50px;">Slip</th>
                     </tr>
-                    <tr>
-                        <th width="40" class="bg-white">H</th>
-                        <th width="40" class="bg-white">I</th>
-                        <th width="40" class="bg-white">S</th>
+                    <tr class="small text-muted">
+                        <!-- Sub Columns -->
+                        <th width="40">Vol</th> <th width="70">Rate</th> <th width="90">Jml</th>
+                        <th width="40" style="background-color: #fff7ed;">Vol</th> <th width="70" style="background-color: #fff7ed;">Rate</th> <th width="90" style="background-color: #fff7ed;">Jml</th>
+                        <th width="40" style="background-color: #ecfdf5;">Vol</th> <th width="70" style="background-color: #ecfdf5;">Rate</th> <th width="90" style="background-color: #ecfdf5;">Jml</th>
+                        <th width="40" style="background-color: #eff6ff;">Vol</th> <th width="70" style="background-color: #eff6ff;">Rate</th> <th width="90" style="background-color: #eff6ff;">Jml</th>
                     </tr>
                 </thead>
                 <tbody class="text-dark bg-white">
                     @foreach($rekapInsentif as $uid => $row)
-                    <tr class="hover-bg-light">
-                        <td class="px-3 py-3 fw-bold">{{ $row['nama'] }}</td>
-                        <td class="text-center">{{ $row['hadir'] }}</td>
-                        <td class="text-center">{{ $row['izin'] }}</td>
-                        <td class="text-center">{{ $row['sakit'] }}</td>
-                        
-                        <td class="text-end px-3 font-monospace">Rp {{ number_format($row['nominal_hadir'], 0, ',', '.') }}</td>
-                        <td class="text-end px-3 font-monospace" style="background-color: #fef3c7;">Rp 0</td> 
-                        <td class="text-end px-3 font-monospace" style="background-color: #d1fae5;">Rp {{ number_format($row['nominal_dinas'], 0, ',', '.') }}</td>
-                        <td class="text-end px-3 fw-bold font-monospace">Rp {{ number_format($row['total_terima'], 0, ',', '.') }}</td>
-                        
-                        <td class="text-center fw-bold" style="background-color: #fef3c7;">0</td>
-                        <td class="text-center fw-bold" style="background-color: #d1fae5;">{{ $row['dinas'] }}</td>
+                    <tr>
+                        <td class="px-3 fw-bold sticky-col start-0 bg-white">{{ $row['nama'] }}</td>
+
+                        <!-- 1. Hadir -->
+                        <td class="text-center">{{ $row['jml_hadir'] }}</td>
+                        <td class="text-end text-muted">100k</td>
+                        <td class="text-end fw-bold">Rp {{ number_format($row['nominal_hadir'], 0, ',', '.') }}</td>
+
+                        <!-- 2. Lembur -->
+                        <td class="text-center" style="background-color: #fff7ed;">{{ $row['jml_lembur'] }}</td>
+                        <td class="text-end text-muted" style="background-color: #fff7ed;">50k</td>
+                        <td class="text-end fw-bold text-warning" style="background-color: #fff7ed;">Rp {{ number_format($row['nominal_lembur'], 0, ',', '.') }}</td>
+
+                        <!-- 3. Dinas Luar -->
+                        <td class="text-center" style="background-color: #ecfdf5;">{{ $row['jml_dl'] }}</td>
+                        <td class="text-end text-muted" style="background-color: #ecfdf5;">150k</td>
+                        <td class="text-end fw-bold text-success" style="background-color: #ecfdf5;">Rp {{ number_format($row['nominal_dl'], 0, ',', '.') }}</td>
+
+                        <!-- 4. Dinas Menginap -->
+                        <td class="text-center" style="background-color: #eff6ff;">{{ $row['jml_dm'] }}</td>
+                        <td class="text-end text-muted" style="background-color: #eff6ff;">300k</td>
+                        <td class="text-end fw-bold text-primary" style="background-color: #eff6ff;">Rp {{ number_format($row['nominal_dm'], 0, ',', '.') }}</td>
+
+                        <!-- TOTAL -->
+                        <td class="text-end fw-bold text-white bg-indigo fs-6">
+                            Rp {{ number_format($row['total_terima'], 0, ',', '.') }}
+                        </td>
                         <td class="text-center">
-                            <button class="btn btn-sm btn-light text-indigo rounded-circle shadow-sm" style="width: 32px; height: 32px;" data-bs-toggle="modal" data-bs-target="#slipModal{{ $uid }}">
-                                <i class="fa-solid fa-eye"></i>
-                            </button>
+                             <a href="{{ route('absensi.download_pdf_slip', $uid) }}?bulan={{ $startDate->month }}&tahun={{ $startDate->year }}" target="_blank" class="btn btn-sm btn-light border text-danger py-0 px-2" title="Cetak Slip">
+                                <i class="fa-solid fa-file-pdf"></i>
+                            </a>
                         </td>
                     </tr>
                     @endforeach
@@ -259,107 +304,21 @@
             </table>
         </div>
     </div>
-    
-    {{-- MODAL SLIP --}}
-    @foreach($rekapInsentif as $uid => $row)
-    <div class="modal fade" id="slipModal{{ $uid }}" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
-                <div style="height: 8px; background: linear-gradient(to right, #4f46e5, #8b5cf6, #ec4899);"></div>
-                <div class="modal-body p-4 p-md-5">
-                    <div class="text-center mb-4 border-bottom pb-3 border-secondary border-opacity-10">
-                        <img src="{{ asset('img/logo.png') }}" alt="Logo" style="height: 40px;" class="mb-2 opacity-75 grayscale">
-                        <h5 class="fw-bold text-uppercase mb-0 text-dark ls-1">Slip Insentif</h5>
-                        <small class="text-muted text-uppercase d-block mt-1 fw-bold" style="font-size: 10px;">DPC FSP LEM SPSI KARAWANG</small>
-                        <div class="badge bg-light text-dark mt-2 border">Periode: {{ $startDate->format('F Y') }}</div>
-                    </div>
-                    
-                    <div class="row small mb-4">
-                        <div class="col-6">
-                            <div class="text-muted text-uppercase fw-bold" style="font-size: 9px;">Nama Pengurus</div>
-                            <div class="fw-bold text-dark fs-6">{{ $row['nama'] }}</div>
-                        </div>
-                        <div class="col-6 text-end">
-                            <div class="text-muted text-uppercase fw-bold" style="font-size: 9px;">ID Referensi</div>
-                            <div class="fw-bold text-dark font-monospace">SLIP-{{ $uid }}-{{ date('mY') }}</div>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive mb-4 rounded-3 border border-secondary border-opacity-10">
-                        <table class="table table-sm small mb-0">
-                            <thead class="bg-light text-uppercase text-muted" style="font-size: 9px;">
-                                <tr>
-                                    <th class="ps-3 py-2 border-bottom-0">Sumber Penghasilan</th>
-                                    <th class="text-center py-2 border-bottom-0">Vol</th>
-                                    <th class="text-end pe-3 py-2 border-bottom-0">Subtotal</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-dark">
-                                <tr>
-                                    <td class="ps-3 py-2 border-secondary border-opacity-10">
-                                        <div class="fw-bold">Uang Hadir / Rapat</div>
-                                        <small class="text-muted" style="font-size: 9px;">@ Rp 100.000 / kehadiran</small>
-                                    </td>
-                                    <td class="text-center py-2 align-middle border-secondary border-opacity-10">{{ $row['hadir'] }}</td>
-                                    <td class="text-end pe-3 py-2 align-middle fw-medium border-secondary border-opacity-10">
-                                        Rp {{ number_format($row['nominal_hadir'], 0, ',', '.') }}
-                                    </td>
-                                </tr>
-                                @if($row['dinas'] > 0)
-                                <tr>
-                                    <td class="ps-3 py-2 border-secondary border-opacity-10 border-bottom-0">
-                                        <div class="fw-bold">Dinas Luar Kota</div>
-                                        <small class="text-muted" style="font-size: 9px;">@ Rp 150.000 / kegiatan</small>
-                                    </td>
-                                    <td class="text-center py-2 align-middle border-secondary border-opacity-10 border-bottom-0">{{ $row['dinas'] }}</td>
-                                    <td class="text-end pe-3 py-2 align-middle fw-medium border-secondary border-opacity-10 border-bottom-0">
-                                        Rp {{ number_format($row['nominal_dinas'], 0, ',', '.') }}
-                                    </td>
-                                </tr>
-                                @endif
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="bg-indigo-50 p-4 rounded-3 d-flex justify-content-between align-items-center border border-indigo-100 position-relative overflow-hidden">
-                        <div style="position: absolute; right: -10px; bottom: -20px; font-size: 80px; opacity: 0.05; transform: rotate(-15deg);"><i class="fa-solid fa-money-bill-wave"></i></div>
-                        <div style="z-index: 1;">
-                            <div class="fw-bold text-indigo text-uppercase small ls-1">Total Diterima</div>
-                            <div class="text-muted" style="font-size: 10px;">Via Transfer Bank BJB</div>
-                        </div>
-                        <div class="fs-2 fw-bold text-indigo" style="z-index: 1;">Rp {{ number_format($row['total_terima'], 0, ',', '.') }}</div>
-                    </div>
-                    
-                    <div class="text-center mt-3">
-                        <small class="text-muted fst-italic" style="font-size: 9px;">* Dokumen ini digenerate otomatis oleh sistem dan sah tanpa tanda tangan basah.</small>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light border-0 p-3">
-                    <button type="button" class="btn btn-white bg-white border flex-fill rounded-3 fw-bold py-2 shadow-sm" data-bs-dismiss="modal">Tutup</button>
-                    <a href="{{ route('absensi.download_pdf_slip', ['userId' => $uid, 'bulan' => $startDate->month, 'tahun' => $startDate->year]) }}" 
-                    class="btn bg-indigo text-white flex-fill rounded-3 fw-bold shadow-sm py-2 text-decoration-none text-center">
-                        <i class="fa-solid fa-print me-2"></i> Cetak / Unduh PDF
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endforeach
 
 @elseif($currView == 'monitoring')
     <!-- === VIEW 3: MONITORING IZIN (APPROVAL SYSTEM) === -->
     <div class="row g-4 animate-in fade-in">
         
-        <!-- 1. DETAIL HARI INI & PENDING APPROVAL (Tidak Berubah) -->
+        <!-- 1. DETAIL HARI INI & PENDING APPROVAL -->
         <div class="col-12">
             <div class="card border-0 shadow-sm rounded-2xl overflow-hidden">
                 <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold m-0 text-dark">
+                    <h6 class="fw-bold m-0 text-dark fs-7">
                         <i class="fa-solid fa-list-check me-2 text-indigo"></i> Permintaan Persetujuan & Monitoring Hari Ini
                     </h6>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-bordered mb-0 align-middle" style="font-size: 0.85rem;">
+                    <table class="table table-bordered mb-0 align-middle" style="font-size: 0.8rem;">
                         <thead class="bg-light text-muted text-uppercase small">
                             <tr>
                                 <th class="ps-4 py-3 bg-white">Tanggal</th>
@@ -377,23 +336,15 @@
                                 <td class="ps-4 text-muted">{{ \Carbon\Carbon::parse($row->tanggal)->format('d M Y') }}</td>
                                 <td class="fw-bold">{{ $row->nama_lengkap }}</td>
                                 <td class="text-center">
-                                    @if($row->status_kehadiran == 'DINAS')
-                                        <span class="badge bg-info bg-opacity-10 text-info border border-info rounded-pill px-3">DINAS</span>
-                                    @elseif($row->status_kehadiran == 'SAKIT')
-                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-3">SAKIT</span>
-                                    @else
-                                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning rounded-pill px-3">IZIN</span>
-                                    @endif
+                                    <span class="badge bg-warning text-dark">{{ $row->status_kehadiran }}</span>
                                 </td>
                                 <td class="text-muted small">{{ $row->keterangan_tambahan }}</td>
                                 <td class="text-center">
                                     @if($row->url_bukti)
                                         <a href="{{ route('absensi.view_bukti', $row->id) }}" target="_blank" class="btn btn-sm btn-light text-primary border rounded-3 px-2">
-                                            <i class="fa-solid fa-paperclip me-1"></i> Lihat
+                                            <i class="fa-solid fa-paperclip me-1"></i>
                                         </a>
-                                    @else
-                                        <span class="text-muted small fst-italic">-</span>
-                                    @endif
+                                    @else - @endif
                                 </td>
                                 <td class="text-center">
                                     @if($row->status_validasi == 'PENDING')
@@ -410,29 +361,20 @@
                                             <form action="{{ route('absensi.update_status', $row->id) }}" method="POST" class="form-approve">
                                                 @csrf @method('PUT')
                                                 <input type="hidden" name="status" value="APPROVED">
-                                                <button type="submit" class="btn btn-sm btn-success text-white shadow-sm" title="Setujui">
-                                                    <i class="fa-solid fa-check"></i>
-                                                </button>
+                                                <button type="submit" class="btn btn-sm btn-success text-white shadow-sm"><i class="fa-solid fa-check"></i></button>
                                             </form>
                                             <form action="{{ route('absensi.update_status', $row->id) }}" method="POST" class="form-approve">
                                                 @csrf @method('PUT')
                                                 <input type="hidden" name="status" value="REJECTED">
-                                                <button type="submit" class="btn btn-sm btn-danger text-white shadow-sm" title="Tolak">
-                                                    <i class="fa-solid fa-xmark"></i>
-                                                </button>
+                                                <button type="submit" class="btn btn-sm btn-danger text-white shadow-sm"><i class="fa-solid fa-xmark"></i></button>
                                             </form>
                                         </div>
-                                    @else
-                                        <small class="text-muted fst-italic">Selesai</small>
                                     @endif
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-5">
-                                    <i class="fa-regular fa-circle-check fa-2x mb-3 d-block opacity-50"></i>
-                                    Tidak ada data yang perlu divalidasi hari ini.
-                                </td>
+                                <td colspan="7" class="text-center text-muted py-4">Tidak ada data approval.</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -441,14 +383,14 @@
             </div>
         </div>
 
-        <!-- 2. HISTORY TERAKHIR (BAGIAN YANG DIUPDATE) -->
+        <!-- 2. HISTORY TERAKHIR -->
         <div class="col-12">
             <div class="card border-0 shadow-sm rounded-2xl overflow-hidden">
                 <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="fw-bold m-0 text-dark"><i class="fa-solid fa-clock-rotate-left me-2 text-indigo"></i> Riwayat Terakhir (20 Data)</h6>
+                    <h6 class="fw-bold m-0 text-dark fs-7"><i class="fa-solid fa-clock-rotate-left me-2 text-indigo"></i> Riwayat Terakhir</h6>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-bordered mb-0 align-middle" style="font-size: 0.85rem;">
+                    <table class="table table-bordered mb-0 align-middle" style="font-size: 0.8rem;">
                         <thead class="bg-light text-muted text-uppercase small">
                             <tr>
                                 <th class="ps-4 py-3 bg-white" style="width: 120px;">Tanggal</th>
@@ -460,35 +402,19 @@
                         <tbody class="bg-white text-dark">
                             @forelse($historyIzinDinas as $hist)
                             <tr class="hover-bg-light">
-                                <td class="ps-4 text-muted font-monospace">{{ \Carbon\Carbon::parse($hist->tanggal)->format('d/m/Y') }}</td>
+                                <td class="ps-4 text-muted">{{ \Carbon\Carbon::parse($hist->tanggal)->format('d/m/Y') }}</td>
                                 <td class="fw-bold">{{ $hist->nama_lengkap }}</td>
                                 <td class="text-center">
-                                    {{-- UPDATE: Menggunakan Badge Lengkap, bukan inisial --}}
-                                    @if($hist->status_kehadiran == 'DINAS')
-                                        <span class="badge bg-info bg-opacity-10 text-info border border-info rounded-pill px-3">DINAS</span>
-                                    @elseif($hist->status_kehadiran == 'SAKIT')
-                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-3">SAKIT</span>
-                                    @else
-                                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning rounded-pill px-3">IZIN</span>
-                                    @endif
+                                    <span class="badge bg-light text-dark border">{{ $hist->status_kehadiran }}</span>
                                 </td>
                                 <td class="text-center">
                                     @if($hist->url_bukti)
-                                        <a href="{{ route('absensi.view_bukti', $hist->id) }}" target="_blank" class="btn btn-sm btn-light text-indigo rounded-circle shadow-sm" style="width: 32px; height: 32px;">
-                                            <i class="fa-solid fa-eye"></i>
-                                        </a>
-                                    @else
-                                        <span class="text-muted small">-</span>
-                                    @endif
+                                        <a href="{{ route('absensi.view_bukti', $hist->id) }}" target="_blank"><i class="fa-solid fa-eye text-primary"></i></a>
+                                    @else - @endif
                                 </td>
                             </tr>
                             @empty
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-5">
-                                    <i class="fa-regular fa-folder-open fa-2x mb-3 d-block opacity-50"></i>
-                                    Belum ada riwayat.
-                                </td>
-                            </tr>
+                            <tr><td colspan="4" class="text-center text-muted py-4">Belum ada riwayat.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -499,17 +425,12 @@
 @endif
 
 <script>
-    // UX: Prevent Double Click on Approval & Show Spinner
     document.addEventListener('DOMContentLoaded', function() {
         const approveForms = document.querySelectorAll('.form-approve');
         approveForms.forEach(form => {
             form.addEventListener('submit', function() {
                 const btn = this.querySelector('button');
-                if(btn) {
-                    btn.disabled = true;
-                    // Simpan icon lama (optional, bisa replace content)
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
-                }
+                if(btn) { btn.disabled = true; }
             });
         });
     });

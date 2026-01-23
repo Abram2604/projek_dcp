@@ -5,12 +5,10 @@ namespace App\Services;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Illuminate\Support\Str;
 
 class AbsensiService
 {
-    /**
-     * Helper: Generate Inisial (Contoh: Dadan Muldan -> DM)
-     */
     private function generateInitials($name)
     {
         $words = explode(' ', $name);
@@ -21,36 +19,67 @@ class AbsensiService
         return substr($initials, 0, 3);
     }
 
-    /**
-     * Pusat Logika Pengambilan Data Rekap
-     * Digunakan oleh: View Rekap Web, Export Excel, Export PDF Matrix, Export PDF Slip
-     */
     public function getDataRekap($reqBulan, $reqTahun)
     {
         $currentDate = Carbon::createFromDate($reqTahun, $reqBulan, 1);
         $startDate = $currentDate->copy()->startOfMonth();
         $endDate   = $currentDate->copy()->endOfMonth();
 
-        // 1. Generate Array Tanggal
+        // 1. Generate Tanggal
         $period = CarbonPeriod::create($startDate, $endDate);
         $dates = [];
         foreach ($period as $date) {
             $dates[] = $date;
         }
 
-        // 2. Ambil Data Anggota
+        // 2. Ambil Anggota
         $anggotaRaw = DB::table('Anggota')
-            ->select('id', 'nama_lengkap')
-            ->where('status_aktif', 1)
-            ->orderBy('id', 'asc')
+            ->join('Jabatan', 'Anggota.id_jabatan', '=', 'Jabatan.id')
+            ->select('Anggota.id', 'Anggota.nama_lengkap', 'Jabatan.nama_jabatan')
+            ->where('Anggota.status_aktif', 1)
+            ->orderBy('Anggota.id', 'asc')
             ->get();
 
         $anggota = [];
+        $rekapInsentif = [];
+
+        // Tarif (Configurable)
+        $RATE_HADIR = 100000;
+        $RATE_LEMBUR = 50000;
+        $RATE_DINAS_LUAR = 150000; // Flat
+        $RATE_DINAS_MENGINAP = 300000; // Flat
+
         foreach ($anggotaRaw as $a) {
             $anggota[] = [
                 'id' => $a->id,
                 'nama' => $a->nama_lengkap,
+                'jabatan' => $a->nama_jabatan,
                 'inisial' => $this->generateInitials($a->nama_lengkap)
+            ];
+
+            // Struktur Data Keuangan Lengkap
+            $rekapInsentif[$a->id] = [
+                'nama' => $a->nama_lengkap,
+                'jabatan' => $a->nama_jabatan,
+                
+                // 1. Gaji Harian (Pokok)
+                'jml_hadir' => 0, 
+                'nominal_hadir' => 0,
+
+                // 2. Lembur (Tugas Luar Jam Kerja)
+                'jml_lembur' => 0, 
+                'nominal_lembur' => 0,
+
+                // 3. Dinas Luar Kota
+                'jml_dl' => 0,
+                'nominal_dl' => 0,
+
+                // 4. Dinas Menginap
+                'jml_dm' => 0,
+                'nominal_dm' => 0,
+
+                // Total
+                'total_terima' => 0
             ];
         }
 
@@ -59,82 +88,70 @@ class AbsensiService
             ->whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
             ->get();
 
-        // 4. Mapping Data Matrix & Hitung Insentif
         $matrixData = [];
-        $rekapInsentif = [];
 
-        // Init Struktur Data
-        foreach ($anggota as $usr) {
-            $rekapInsentif[$usr['id']] = [
-                'nama' => $usr['nama'],
-                'hadir' => 0,
-                'dinas' => 0,
-                'sakit' => 0,
-                'izin' => 0,
-                'nominal_hadir' => 0,
-                'nominal_dinas' => 0,
-                'total_terima' => 0
-            ];
-        }
-
-        // Proses Data Absensi
         foreach ($absensiRaw as $absen) {
             $dateKey = $absen->tanggal;
             $userId  = $absen->id_anggota;
-            $jamPulang = $absen->jam_pulang;
+            
+            // Validasi: Hanya hitung yang sudah APPROVED
+            if ($absen->status_validasi != 'APPROVED') continue;
 
-            // LOGIC PENTING: Hanya data APPROVED yang dihitung valid
-            $isValid = ($absen->status_validasi == 'APPROVED');
+            $kodeStatus = '-';
 
-            $status = '-';
+            // === LOGIKA PERHITUNGAN ===
+            
+            if ($absen->status_kehadiran == 'HADIR') {
+                // A. KEHADIRAN BIASA
+                $rekapInsentif[$userId]['jml_hadir']++;
+                $rekapInsentif[$userId]['nominal_hadir'] += $RATE_HADIR;
+                $kodeStatus = 'H';
 
-            if ($absen->status_kehadiran == 'DINAS') {
-                $status = 'D';
-            } elseif ($absen->status_kehadiran == 'SAKIT') {
-                $status = 'S';
-            } elseif ($absen->status_kehadiran == 'IZIN') {
-                $status = 'I';
-            } elseif ($absen->status_kehadiran == 'HADIR') {
-                // Cek Lembur (> 21:00)
-                if ($jamPulang && $jamPulang >= '21:00:00') {
-                    $status = 'O'; // Overtime
+                // B. CEK LEMBUR (Pulang > 21:00)
+                if ($absen->jam_pulang && $absen->jam_pulang >= '21:00:00') {
+                    $rekapInsentif[$userId]['jml_lembur']++;
+                    $rekapInsentif[$userId]['nominal_lembur'] += $RATE_LEMBUR;
+                    $kodeStatus = 'O'; // Overtime
+                }
+
+            } elseif ($absen->status_kehadiran == 'DINAS') {
+                // Cek Jenis Dinas dari Keterangan (String Matching)
+                // Format di DB biasanya: "Dinas Menginap: Jakarta (Rapat...)"
+                $ket = strtolower($absen->keterangan_tambahan);
+
+                if (str_contains($ket, 'menginap')) {
+                    // C. DINAS MENGINAP (Flat 300rb)
+                    $rekapInsentif[$userId]['jml_dm']++;
+                    $rekapInsentif[$userId]['nominal_dm'] += $RATE_DINAS_MENGINAP;
+                    $kodeStatus = 'DM';
                 } else {
-                    $status = 'H'; // Hadir Biasa
+                    // D. DINAS LUAR KOTA BIASA (Flat 150rb)
+                    $rekapInsentif[$userId]['jml_dl']++;
+                    $rekapInsentif[$userId]['nominal_dl'] += $RATE_DINAS_LUAR;
+                    $kodeStatus = 'DL';
                 }
+
+            } elseif ($absen->status_kehadiran == 'SAKIT') {
+                $kodeStatus = 'S';
+            } elseif ($absen->status_kehadiran == 'IZIN') {
+                $kodeStatus = 'I';
             }
 
-            // Jika REJECTED, tandai 'X' atau abaikan
-            if ($absen->status_validasi == 'REJECTED') {
-                $status = 'X';
-            }
-
-            // Simpan ke Matrix [Tanggal][User] (Tapilkan status apa adanya untuk monitoring)
-            $matrixData[$dateKey][$userId] = $status;
-
-            // Hitung Insentif (HANYA JIKA APPROVED)
-            if ($isValid && isset($rekapInsentif[$userId])) {
-                if ($status == 'H' || $status == 'O') {
-                    $rekapInsentif[$userId]['hadir']++;
-                    $rekapInsentif[$userId]['nominal_hadir'] += 100000; // Rate Hadir
-                } elseif ($status == 'D') {
-                    $rekapInsentif[$userId]['dinas']++;
-                    $rekapInsentif[$userId]['nominal_dinas'] += 150000; // Rate Dinas
-                } elseif ($status == 'S') {
-                    $rekapInsentif[$userId]['sakit']++;
-                } elseif ($status == 'I') {
-                    $rekapInsentif[$userId]['izin']++;
-                }
-            }
+            // Simpan Kode untuk Matrix Tampilan
+            $matrixData[$dateKey][$userId] = $kodeStatus;
         }
 
-        // Hitung Total Terima
+        // 4. Hitung Grand Total
         foreach ($rekapInsentif as $uid => $val) {
-            $rekapInsentif[$uid]['total_terima'] = $val['nominal_hadir'] + $val['nominal_dinas'];
+            $rekapInsentif[$uid]['total_terima'] = 
+                $val['nominal_hadir'] + 
+                $val['nominal_lembur'] + 
+                $val['nominal_dl'] + 
+                $val['nominal_dm'];
         }
 
-        // 5. Daftar Hari Libur
         $hariLibur = [
-            $reqTahun . '-12-25' => 'LIBUR NATAL',
+            $reqTahun . '-12-25' => 'NATAL',
             $reqTahun . '-01-01' => 'TAHUN BARU',
             $reqTahun . '-08-17' => 'HUT RI',
             $reqTahun . '-05-01' => 'BURUH',

@@ -24,10 +24,21 @@ $sidebar-width: 280px;
 // 4. Custom CSS Tambahan
 body {
     background-color: #f8fafc;
-    font-size: 0.925rem;
+    font-size: 0.875rem; /* Font default diperkecil ke 14px */
+    font-family: 'Inter', sans-serif;
 }
 
-// === NEW SIDEBAR STYLING ===
+/* Helper Font Sizes */
+.fs-7 { font-size: 0.9rem !important; }
+.fs-8 { font-size: 0.75rem !important; }
+
+/* Custom Badge Colors */
+.bg-success-subtle { background-color: #dcfce7 !important; }
+.bg-danger-subtle { background-color: #fee2e2 !important; }
+.bg-warning-subtle { background-color: #fef3c7 !important; }
+.bg-primary-subtle { background-color: #e0e7ff !important; }
+
+/* === SIDEBAR STYLING === */
 $indigo-900: #312e81;
 $indigo-800: #3730a3;
 $indigo-700: #4338ca;
@@ -360,16 +371,14 @@ $indigo-200: #c7d2fe;
             }
         }
     }
-} // <--- PENUTUP LOGIN PAGE
+}
 
 // === STYLE UNTUK MODAL QR (GLOBAL) ===
-// --- Dipindahkan keluar dari login-page agar terbaca di dashboard ---
-
 .qr-card {
     border-radius: 1.5rem;
     overflow: hidden;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    background-color: #312e81; /* Indigo 900 */
+    background-color: #312e81; 
     color: white;
 }
 
@@ -412,7 +421,7 @@ $indigo-200: #c7d2fe;
 }
 
 .qr-footer {
-    background-color: #3730a3; /* Indigo 800 */
+    background-color: #3730a3; 
     padding: 1rem;
     text-align: center;
 }
@@ -435,15 +444,15 @@ $indigo-200: #c7d2fe;
 .bg-indigo-50 { background-color: var(--indigo-50) !important; }
 .border-indigo-100 { border-color: var(--indigo-100) !important; }
 
-.rounded-xl { border-radius: 0.75rem !important; } /* 12px */
-.rounded-2xl { border-radius: 1rem !important; }    /* 16px */
-.rounded-3xl { border-radius: 1.5rem !important; }  /* 24px */
+.rounded-xl { border-radius: 0.75rem !important; } 
+.rounded-2xl { border-radius: 1rem !important; }    
+.rounded-3xl { border-radius: 1.5rem !important; } 
 
 .shadow-soft { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important; }
 
-/* Custom Nav Pills seperti di desain */
+/* Custom Nav Pills */
 .nav-pills-custom .nav-link {
-    color: #4b5563; /* Gray-600 */
+    color: #4b5563; 
     background: transparent;
     font-weight: 600;
     padding: 0.5rem 1.5rem;

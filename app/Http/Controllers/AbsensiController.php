@@ -12,6 +12,7 @@ use Carbon\CarbonPeriod;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\RekapAbsensiExport;
+use App\Exports\RekapInsentifExport; 
 use App\Services\AbsensiService;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -19,7 +20,6 @@ class AbsensiController extends Controller
 {
     protected $absensiService;
 
-    // Inject Service via Constructor
     public function __construct(AbsensiService $absensiService)
     {
         $this->absensiService = $absensiService;
@@ -33,24 +33,25 @@ class AbsensiController extends Controller
     {
         $user = Auth::user();
 
+        // 1. GENERATE QR STATIS
         if (empty($user->string_kode_qr)) {
-            $cleanUsername = \preg_replace('/[^A-Za-z0-9]/', '', $user->username);
-            $qrString = $user->id . '-' . $cleanUsername . '-' . Str::random(5);
-
+            $qrString = 'SPSI-' . date('Y') . '-' . str_pad($user->id, 3, '0', STR_PAD_LEFT) . '-' . strtoupper(Str::random(4));
             DB::table('Anggota')->where('id', $user->id)->update(['string_kode_qr' => $qrString]);
-            $user->string_kode_qr = $qrString;
+            $user->string_kode_qr = $qrString; 
         }
 
+        // 2. Ambil Status Absen Hari Ini
         $absenHariIni = DB::table('Riwayat_Absensi')
             ->where('id_anggota', $user->id)
             ->where('tanggal', Carbon::now()->toDateString())
             ->first();
         
+        // 3. Ambil Riwayat Pribadi (5 Terakhir)
         $riwayatPribadi = DB::table('Riwayat_Absensi')
-        ->where('id_anggota', $user->id)
-        ->orderBy('tanggal', 'desc')
-        ->limit(5)
-        ->get();
+            ->where('id_anggota', $user->id)
+            ->orderBy('tanggal', 'desc')
+            ->limit(5)
+            ->get();
 
         return view('pages.absensi.index', compact('user', 'absenHariIni', 'riwayatPribadi'));
     }
@@ -64,7 +65,7 @@ class AbsensiController extends Controller
         $user = Auth::user();
         $today = Carbon::now()->toDateString();
         $now   = Carbon::now()->toTimeString();
-        $type  = $request->input('tipe');
+        $type  = $request->input('tipe'); 
 
         try {
             if ($type == 'masuk') {
@@ -72,7 +73,7 @@ class AbsensiController extends Controller
                     $user->id,
                     $today,
                     $now,
-                    'QR_DINDING'
+                    'INPUT_MANUAL' 
                 ]);
                 return redirect()->route('absensi.index', ['tab' => 'qr'])
                     ->with('success', 'Berhasil Absen Masuk pada ' . $now);
@@ -87,15 +88,9 @@ class AbsensiController extends Controller
             }
         } catch (\Exception $e) {
             $msg = $e->getMessage();
-            if (str_contains($msg, 'User sudah melakukan absen')) {
-                $msg = 'Anda sudah absen masuk hari ini.';
-            }
-            if (str_contains($msg, 'Gagal Pulang')) {
-                $msg = 'Anda belum absen masuk hari ini.';
-            }
-            if (str_contains($msg, 'sudah melakukan absen pulang')) {
-                $msg = 'Anda sudah absen pulang sebelumnya.';
-            }
+            if (str_contains($msg, 'User sudah melakukan absen')) { $msg = 'Anda sudah absen masuk hari ini.'; }
+            if (str_contains($msg, 'Gagal Pulang')) { $msg = 'Anda belum absen masuk hari ini.'; }
+            if (str_contains($msg, 'sudah melakukan absen pulang')) { $msg = 'Anda sudah absen pulang sebelumnya.'; }
 
             return back()->withErrors(['msg' => 'Gagal: ' . $msg]);
         }
@@ -103,20 +98,14 @@ class AbsensiController extends Controller
     }
 
     // =========================================================================
-    // FITUR KIOSK / TERMINAL SCANNER (BARU)
+    // FITUR KIOSK / TERMINAL SCANNER
     // =========================================================================
 
-    /**
-     * Menampilkan Halaman Terminal (Standby di PC Kantor)
-     */
     public function kiosk()
     {
         return view('pages.absensi.kiosk');
     }
 
-    /**
-     * Logic Scan Otomatis (Dipanggil Ajax)
-     */
     public function processScan(Request $request)
     {
         $qrString = $request->input('qr_code');
@@ -125,18 +114,16 @@ class AbsensiController extends Controller
             return response()->json(['status' => 'error', 'message' => 'QR Code tidak terbaca.']);
         }
 
-        // 1. Validasi Anggota
         $anggota = DB::table('Anggota')->where('string_kode_qr', $qrString)->first();
 
         if (!$anggota) {
-            return response()->json(['status' => 'error', 'message' => 'QR Code tidak dikenali.']);
+            return response()->json(['status' => 'error', 'message' => 'QR Code tidak dikenali / User tidak ditemukan.']);
         }
 
         if ($anggota->status_aktif != 1) {
             return response()->json(['status' => 'error', 'message' => 'Akun anggota non-aktif.']);
         }
 
-        // 2. Logic Absensi
         $today = Carbon::now()->toDateString();
         $now   = Carbon::now()->toTimeString();
 
@@ -146,7 +133,6 @@ class AbsensiController extends Controller
             ->first();
 
         try {
-            // SKENARIO 1: Belum ada data -> ABSEN MASUK
             if (!$riwayat) {
                 if (Carbon::now()->isSunday()) {
                     return response()->json(['status' => 'error', 'message' => 'Absensi Libur Hari Minggu.']);
@@ -168,7 +154,6 @@ class AbsensiController extends Controller
                 ]);
             }
 
-            // SKENARIO 2: Sudah Masuk (HADIR), Belum Pulang -> ABSEN PULANG
             if ($riwayat && $riwayat->status_kehadiran == 'HADIR' && $riwayat->jam_pulang == null) {
                 DB::statement('CALL sp_absen_pulang(?, ?, ?)', [
                     $anggota->id,
@@ -185,20 +170,12 @@ class AbsensiController extends Controller
                 ]);
             }
 
-            // SKENARIO 3: Sudah Pulang
             if ($riwayat && $riwayat->jam_pulang != null) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Anda sudah absen pulang hari ini.'
-                ]);
+                return response()->json(['status' => 'error', 'message' => 'Anda sudah absen pulang hari ini.']);
             }
 
-            // SKENARIO 4: Status Bukan HADIR (Misal Dinas/Sakit)
             if ($riwayat && $riwayat->status_kehadiran != 'HADIR') {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Status Anda hari ini: ' . $riwayat->status_kehadiran
-                ]);
+                return response()->json(['status' => 'error', 'message' => 'Status Anda hari ini: ' . $riwayat->status_kehadiran]);
             }
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => 'System Error: ' . $e->getMessage()]);
@@ -206,7 +183,7 @@ class AbsensiController extends Controller
     }
 
     // =========================================================================
-    // FITUR DINAS & IZIN (SECURE UPLOAD)
+    // FITUR DINAS & IZIN (INPUT WEB)
     // =========================================================================
 
     public function storeDinas(Request $request)
@@ -219,7 +196,7 @@ class AbsensiController extends Controller
             'jenis_dinas' => 'required',
             'lokasi_tujuan' => 'required',
             'keterangan' => 'required',
-            'bukti_foto' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'bukti_foto' => 'required|image|mimes:jpeg,png,jpg|max:4096',
         ]);
 
         try {
@@ -238,13 +215,13 @@ class AbsensiController extends Controller
                 $user->id,
                 Carbon::now()->toDateString(),
                 Carbon::now()->toTimeString(),
-                Carbon::now()->addHours(8)->toTimeString(),
+                Carbon::now()->addHours(8)->toTimeString(), 
                 $keteranganLengkap,
                 $pathBukti
             ]);
 
             return redirect()->route('absensi.index', ['tab' => 'dinas'])
-                ->with('success', 'Absensi Dinas berhasil dicatat (Menunggu Approval).');
+                ->with('success', 'Laporan Dinas berhasil dikirim (Menunggu Approval).');
         } catch (\Exception $e) {
             return back()->withErrors(['msg' => 'System Error: ' . $e->getMessage()]);
         }
@@ -262,6 +239,7 @@ class AbsensiController extends Controller
 
         $user = Auth::user();
         $period = CarbonPeriod::create($request->mulai_tanggal, $request->sampai_tanggal);
+        
         $status = ($request->kategori == 'Sakit') ? 'SAKIT' : 'IZIN';
         $keterangan = $request->kategori . ': ' . $request->alasan;
 
@@ -332,14 +310,21 @@ class AbsensiController extends Controller
     {
         $reqBulan = $request->input('bulan', Carbon::now()->month);
         $reqTahun = $request->input('tahun', Carbon::now()->year);
-        $viewType = $request->input('view', 'matrix');
+        $viewType = $request->input('view', 'matrix'); // 'matrix', 'incentive', 'monitoring'
 
+        // Logic perhitungan ada di Service
         $data = $this->absensiService->getDataRekap($reqBulan, $reqTahun);
 
+        // Tambahkan navigasi bulan
         $currentDate = Carbon::createFromDate($reqTahun, $reqBulan, 1);
         $data['prevDate'] = $currentDate->copy()->subMonth();
         $data['nextDate'] = $currentDate->copy()->addMonth();
 
+        // --- [FIX] KIRIM VARIABEL currView KE VIEW ---
+        $data['currView'] = $viewType;
+        // ---------------------------------------------
+
+        // Data tambahan untuk view 'monitoring'
         $data['monitoringHariIni'] = [];
         $data['historyIzinDinas'] = [];
 
@@ -390,9 +375,19 @@ class AbsensiController extends Controller
     {
         $reqBulan = $request->input('bulan', Carbon::now()->month);
         $reqTahun = $request->input('tahun', Carbon::now()->year);
+        $type     = $request->input('type', 'absensi'); // Default absensi
+
         $data = $this->absensiService->getDataRekap($reqBulan, $reqTahun);
-        $filename = 'Rekap_Absensi_' . $data['startDate']->format('F_Y') . '.xlsx';
-        return Excel::download(new RekapAbsensiExport($data), $filename);
+        
+        // Logika Pemisahan Export
+        if ($type === 'insentif') {
+            $filename = 'Laporan_Insentif_' . $data['startDate']->format('F_Y') . '.xlsx';
+            return Excel::download(new RekapInsentifExport($data), $filename);
+        } else {
+            // Default: Rekap Absensi Matrix
+            $filename = 'Rekap_Absensi_' . $data['startDate']->format('F_Y') . '.xlsx';
+            return Excel::download(new RekapAbsensiExport($data), $filename);
+        }
     }
 
     public function downloadPdfRekap(Request $request)
@@ -415,6 +410,7 @@ class AbsensiController extends Controller
         }
         $slipData = $allData['rekapInsentif'][$userId];
         $periode  = $allData['startDate'];
+        
         $pdf = Pdf::loadView('exports.pdf_slip', compact('slipData', 'periode', 'userId'))->setPaper('a5', 'landscape');
         return $pdf->download('Slip_Gaji_' . Str::slug($slipData['nama']) . '.pdf');
     }
@@ -423,12 +419,10 @@ class AbsensiController extends Controller
     {
         $user = Auth::user();
 
-        // Pastikan QR String ada
         if (empty($user->string_kode_qr)) {
             return back()->withErrors(['msg' => 'QR Code belum digenerate.']);
         }
 
-        // Ambil jabatan & divisi untuk ditampilkan di kartu
         $jabatan = DB::table('Jabatan')->where('id', $user->id_jabatan)->value('nama_jabatan');
         $divisi  = DB::table('Divisi')->where('id', $user->id_divisi)->value('nama_divisi');
 
@@ -438,8 +432,9 @@ class AbsensiController extends Controller
             'divisi' => $divisi ?? '-'
         ];
 
+        // Ukuran ID Card (85mm x 54mm) dalam points
         $pdf = Pdf::loadView('exports.pdf_id_card', $data)
-            ->setPaper([0, 0, 240, 153], 'landscape'); // Ukuran ID Card (85mm x 54mm approx in points)
+            ->setPaper([0, 0, 240, 153], 'landscape'); 
 
         return $pdf->download('ID_Card_' . $user->username . '.pdf');
     }

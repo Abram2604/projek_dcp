@@ -45,7 +45,7 @@
             </tr>
         </table>
 
-        <table class="details-table">
+         <table class="details-table">
             <thead>
                 <tr>
                     <th>Keterangan Sumber Penghasilan</th>
@@ -54,22 +54,51 @@
                 </tr>
             </thead>
             <tbody>
+                {{-- 1. UANG HADIR --}}
                 <tr>
                     <td>
                         <strong>Uang Hadir / Rapat</strong><br>
-                        <span style="font-size: 10px; color: #666;">Insentif kehadiran harian & lembur</span>
+                        <span style="font-size: 10px; color: #666;">Insentif kehadiran harian</span>
                     </td>
-                    <td style="text-align: center;">{{ $slipData['hadir'] }}</td>
+                    {{-- PERBAIKAN: Ganti ['hadir'] menjadi ['jml_hadir'] --}}
+                    <td style="text-align: center;">{{ $slipData['jml_hadir'] }}</td>
                     <td style="text-align: right;">{{ number_format($slipData['nominal_hadir'], 0, ',', '.') }}</td>
                 </tr>
-                @if($slipData['dinas'] > 0)
+
+                {{-- 2. LEMBUR (Jika Ada) --}}
+                @if($slipData['jml_lembur'] > 0)
+                <tr>
+                    <td>
+                        <strong>Insentif Lembur</strong><br>
+                        <span style="font-size: 10px; color: #666;">Pulang di atas jam 21:00</span>
+                    </td>
+                    <td style="text-align: center;">{{ $slipData['jml_lembur'] }}</td>
+                    <td style="text-align: right;">{{ number_format($slipData['nominal_lembur'], 0, ',', '.') }}</td>
+                </tr>
+                @endif
+
+                {{-- 3. DINAS LUAR KOTA (Jika Ada) --}}
+                @if($slipData['jml_dl'] > 0)
                 <tr>
                     <td>
                         <strong>Dinas Luar Kota</strong><br>
-                        <span style="font-size: 10px; color: #666;">Insentif tugas luar kantor</span>
+                        <span style="font-size: 10px; color: #666;">Tugas luar kantor (1 Hari)</span>
                     </td>
-                    <td style="text-align: center;">{{ $slipData['dinas'] }}</td>
-                    <td style="text-align: right;">{{ number_format($slipData['nominal_dinas'], 0, ',', '.') }}</td>
+                    {{-- PERBAIKAN: Gunakan key yang benar dari Service --}}
+                    <td style="text-align: center;">{{ $slipData['jml_dl'] }}</td>
+                    <td style="text-align: right;">{{ number_format($slipData['nominal_dl'], 0, ',', '.') }}</td>
+                </tr>
+                @endif
+
+                {{-- 4. DINAS MENGINAP (Jika Ada) --}}
+                @if($slipData['jml_dm'] > 0)
+                <tr>
+                    <td>
+                        <strong>Dinas Menginap</strong><br>
+                        <span style="font-size: 10px; color: #666;">Tugas luar & penginapan</span>
+                    </td>
+                    <td style="text-align: center;">{{ $slipData['jml_dm'] }}</td>
+                    <td style="text-align: right;">{{ number_format($slipData['nominal_dm'], 0, ',', '.') }}</td>
                 </tr>
                 @endif
                 
