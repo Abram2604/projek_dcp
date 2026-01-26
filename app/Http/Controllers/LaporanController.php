@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\LaporanDanaBidangExport;
 
 class LaporanController extends Controller
 {
@@ -15,7 +17,11 @@ class LaporanController extends Controller
         $user = Auth::user();
         $levelAkses = session('user_level', 'ANGGOTA');
         $isBPH = $levelAkses === 'BPH';
+        $jabatan = session('user_jabatan', '');
         $today = Carbon::today();
+
+        // Cek apakah user adalah pengurus harian (ketua, sekretaris, bendahara)
+        $isPengurusHarian = in_array($jabatan, ['Ketua DPC', 'Sekretaris', 'Bendahara']);
 
         $bulan = $today->month;
         $tahun = $today->year;
@@ -49,6 +55,7 @@ class LaporanController extends Controller
         return view('pages.laporan.index', compact(
             'levelAkses',
             'isBPH',
+            'isPengurusHarian',
             'ringkasanSaldo',
             'laporanList',
             'divisiList',
@@ -73,7 +80,7 @@ class LaporanController extends Controller
         ];
 
         if ($isBPH) {
-            $rules['id_divisi'] = 'required|integer';
+            $rules['id_divisi'] = 'required';
         }
 
         $request->validate($rules);
@@ -115,7 +122,28 @@ class LaporanController extends Controller
                 ->withInput();
         }
 
-        $idDivisi = $isBPH ? (int) $request->input('id_divisi') : (int) $user->id_divisi;
+        // Handle id_divisi: jika 'KESEK', cari atau buat divisi Kesekretariatan
+        $idDivisiInput = $isBPH ? $request->input('id_divisi') : $user->id_divisi;
+        if ($idDivisiInput === 'KESEK') {
+            // Cari divisi Kesekretariatan
+            $divisiKesek = DB::table('Divisi')
+                ->where('nama_divisi', 'Bidang Kesekretariatan')
+                ->first();
+            
+            if ($divisiKesek) {
+                $idDivisi = (int) $divisiKesek->id;
+            } else {
+                // Buat divisi baru jika belum ada
+                $idDivisi = DB::table('Divisi')->insertGetId([
+                    'nama_divisi' => 'Bidang Kesekretariatan',
+                    'kode_divisi' => 'KESEK',
+                    'deskripsi' => 'Kesekretariatan dan administrasi',
+                    'dibuat_pada' => now(),
+                ]);
+            }
+        } else {
+            $idDivisi = (int) $idDivisiInput;
+        }
         $idProgram = $request->input('id_program_kerja');
         $idProgram = $idProgram !== null && $idProgram !== '' ? (int) $idProgram : null;
 
@@ -202,5 +230,120 @@ class LaporanController extends Controller
         }
 
         return view('pages.laporan.show', compact('laporan', 'pengeluaran', 'totalPengeluaran', 'isBPH'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        // Hanya BPH yang bisa export
+        $levelAkses = session('user_level', 'ANGGOTA');
+        if ($levelAkses !== 'BPH') {
+            abort(403, 'Hanya BPH yang dapat mengakses fitur export.');
+        }
+
+        // Ambil bulan dan tahun dari request, default bulan dan tahun saat ini
+        $bulan = (int) $request->input('bulan', Carbon::now()->month);
+        $tahun = (int) $request->input('tahun', Carbon::now()->year);
+
+        // Validasi bulan dan tahun
+        if ($bulan < 1 || $bulan > 12) {
+            $bulan = Carbon::now()->month;
+        }
+        if ($tahun < 2000 || $tahun > 2100) {
+            $tahun = Carbon::now()->year;
+        }
+
+        $divisiList = DB::select('CALL sp_divisi_list()');
+        $divisiInput = $request->input('divisi', 'all');
+        $exportAllDivisi = $divisiInput === 'all' || $divisiInput === null || $divisiInput === '';
+        $divisiId = $exportAllDivisi ? null : (int) $divisiInput;
+        $divisiNama = 'Semua Divisi';
+        if (!$exportAllDivisi) {
+            foreach ($divisiList as $divisi) {
+                if ((int) $divisi->id === $divisiId) {
+                    $divisiNama = $divisi->nama_divisi;
+                    break;
+                }
+            }
+        }
+
+        // Hitung tanggal awal dan akhir bulan
+        $startDate = Carbon::create($tahun, $bulan, 1);
+        $endDate = $startDate->copy()->endOfMonth();
+
+        $saldoAwal = 0;
+        $totalPengeluaran = 0;
+        $sisaSaldo = 0;
+        $rekapDivisi = [];
+        if ($exportAllDivisi) {
+            $rekapDivisi = DB::select('CALL sp_laporan_saldo_bph(?, ?)', [$bulan, $tahun]);
+            foreach ($rekapDivisi as $row) {
+                $saldoAwal += (float) $row->saldo_awal;
+                $totalPengeluaran += (float) $row->total_pengeluaran;
+                $sisaSaldo += (float) $row->sisa_saldo;
+            }
+        } elseif ($divisiId !== null) {
+            $saldoRows = DB::select('CALL sp_laporan_saldo_divisi(?, ?, ?)', [$divisiId, $bulan, $tahun]);
+            $saldo = $saldoRows[0] ?? null;
+            if ($saldo) {
+                $saldoAwal = (float) $saldo->saldo_awal;
+                $totalPengeluaran = (float) $saldo->total_pengeluaran;
+                $sisaSaldo = (float) $saldo->sisa_saldo;
+            }
+        }
+
+        $danaMasuk = 0;
+        $pemasukanRows = DB::select('CALL sp_keuangan_pemasukan_list(?, ?)', [$bulan, $tahun]);
+        foreach ($pemasukanRows as $row) {
+            $matches = $exportAllDivisi;
+            if (!$matches && isset($row->id_divisi)) {
+                $matches = (int) $row->id_divisi === $divisiId;
+            }
+            if (!$matches && isset($row->nama_divisi)) {
+                $matches = $row->nama_divisi === $divisiNama;
+            }
+            if ($matches) {
+                $danaMasuk += (float) $row->jumlah_rupiah;
+            }
+        }
+
+        if ($exportAllDivisi) {
+            $detailItems = DB::select('CALL sp_keuangan_pengeluaran_list(?, ?)', [$bulan, $tahun]);
+        } elseif ($divisiId !== null) {
+            $detailItems = DB::select('CALL sp_keuangan_pengeluaran_detail(?, ?, ?)', [$divisiId, $bulan, $tahun]);
+        } else {
+            $detailItems = [];
+        }
+
+        $detailTotal = 0;
+        foreach ($detailItems as $item) {
+            $detailTotal += (float) ($item->total_nominal ?? 0);
+        }
+
+        if ($detailTotal > 0) {
+            $totalPengeluaran = $detailTotal;
+        }
+
+        $totalDana = $saldoAwal + $danaMasuk;
+        $sisaSaldo = $totalDana - $totalPengeluaran;
+
+        // Siapkan data untuk export
+        $data = [
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'divisiNama' => $divisiNama,
+            'penanggungJawab' => Auth::user()->nama_lengkap ?? '-',
+            'saldoAwal' => $saldoAwal,
+            'danaMasuk' => $danaMasuk,
+            'totalDana' => $totalDana,
+            'totalPengeluaran' => $totalPengeluaran,
+            'sisaSaldo' => $sisaSaldo,
+            'detailItems' => $detailItems,
+        ];
+
+        // Generate filename
+        $safeDivisi = preg_replace('/[^A-Za-z0-9]+/', '_', $divisiNama);
+        $filename = 'Laporan_Pengeluaran_Dana_Bidang_' . $safeDivisi . '_' . $startDate->format('F_Y') . '.xlsx';
+
+        return Excel::download(new LaporanDanaBidangExport($data), $filename);
     }
 }

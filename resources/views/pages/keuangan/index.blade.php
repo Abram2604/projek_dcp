@@ -41,14 +41,14 @@
     </div>
     <div class="col-12 col-md-4">
         <div class="card border-0 shadow-sm h-100">
-            <div class="card-body position-relative">
+            <div class="card-body">
                 <div class="d-flex align-items-center gap-3 mb-3">
                     <div class="bg-success bg-opacity-10 text-success p-2 rounded-3">
                         <i class="fa-solid fa-arrow-trend-up"></i>
                     </div>
                     <h6 class="text-muted fw-bold mb-0">Total Pemasukan</h6>
                     @if($isFinanceAdmin)
-                        <button class="btn btn-success btn-sm position-absolute top-0 end-0 m-2 text-white" data-bs-toggle="modal" data-bs-target="#modal-pemasukan">
+                        <button class="btn btn-success btn-sm ms-auto text-white" data-bs-toggle="modal" data-bs-target="#modal-pemasukan">
                             <i class="fa-solid fa-plus"></i>
                         </button>
                     @endif

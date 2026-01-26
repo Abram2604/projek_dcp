@@ -63,9 +63,59 @@
         <h5 class="fw-bold mb-1">Laporan Kegiatan Harian</h5>
         <p class="text-muted small mb-0">Rekap aktivitas harian dan rincian pengeluaran.</p>
     </div>
-    <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="collapse" data-bs-target="#laporanForm">
-        <i class="fa-solid fa-plus me-1"></i> Buat Laporan Baru
-    </button>
+    <div class="d-flex gap-2">
+        @if($isBPH)
+            <div class="dropdown">
+                <button class="btn btn-success rounded-pill px-4 dropdown-toggle text-white" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa-solid fa-file-excel me-1 text-white"></i> Export Excel
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end p-3" aria-labelledby="exportDropdown" style="min-width: 250px;">
+                    <li>
+                        @php $selectedExportDivisi = request('divisi', 'all'); @endphp
+                        <form method="GET" action="{{ route('laporan.export_excel') }}">
+                            <div class="mb-2">
+                                <label class="form-label small">Dipilih untuk Export</label>
+                                <select name="divisi" class="form-select form-select-sm">
+                                    <option value="all" {{ $selectedExportDivisi === 'all' ? 'selected' : '' }}>Semua Divisi</option>
+                                    @foreach($divisiList as $divisi)
+                                        <option value="{{ $divisi->id }}" {{ (string) $selectedExportDivisi === (string) $divisi->id ? 'selected' : '' }}>
+                                            {{ $divisi->nama_divisi }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">Bulan</label>
+                                <select name="bulan" class="form-select form-select-sm">
+                                    @for($i = 1; $i <= 12; $i++)
+                                        <option value="{{ $i }}" {{ $i == date('n') ? 'selected' : '' }}>
+                                            {{ \Carbon\Carbon::create(null, $i, 1)->isoFormat('MMMM') }}
+                                        </option>
+                                    @endfor
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">Tahun</label>
+                                <select name="tahun" class="form-select form-select-sm">
+                                    @for($i = date('Y'); $i >= date('Y') - 2; $i--)
+                                        <option value="{{ $i }}" {{ $i == date('Y') ? 'selected' : '' }}>
+                                            {{ $i }}
+                                        </option>
+                                    @endfor
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-sm w-100 text-white">
+                                <i class="fa-solid fa-download me-1 text-white"></i> Download
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        @endif
+        <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="collapse" data-bs-target="#laporanForm">
+            <i class="fa-solid fa-plus me-1"></i> Buat Laporan Baru
+        </button>
+    </div>
  </div>
 
 <div class="collapse {{ old('judul_kegiatan') || $errors->any() ? 'show' : '' }}" id="laporanForm">
@@ -149,7 +199,7 @@
                     $oldItems = [];
                     $totalOld = 0;
                     $maxOld = max(count($oldDescriptions), count($oldVolumes), count($oldUnits), count($oldAmounts));
-                    for ($i = 0; $i < $maxOld; $i++) {<!--  -->
+                    for ($i = 0; $i < $maxOld; $i++) {
                         $desc = trim((string) ($oldDescriptions[$i] ?? ''));
                         $amount = (float) ($oldAmounts[$i] ?? 0);
                         $volume = (float) ($oldVolumes[$i] ?? 1);

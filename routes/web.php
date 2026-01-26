@@ -58,6 +58,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
     Route::post('/laporan', [LaporanController::class, 'store'])->name('laporan.store');
     Route::get('/laporan/{id}', [LaporanController::class, 'show'])->name('laporan.show');
+    Route::get('/laporan/export/excel', [LaporanController::class, 'exportExcel'])->name('laporan.export_excel')->middleware('role:BPH');
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
     Route::get('/progja', [ProgjaController::class, 'index'])->name('progja.index');
     Route::post('/progja', [ProgjaController::class, 'store'])->name('progja.store');
