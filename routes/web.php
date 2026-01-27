@@ -39,7 +39,7 @@ Route::middleware('auth')->group(function () {
     // === MANAJEMEN ANGGOTA (Users) ===
     // Menggunakan Middleware CekAksesManajemen yang sudah kita buat
     Route::middleware([CekAksesManajemen::class])->group(function () {
-        Route::get('/users', [UserController::class, 'index'])->name('users.index'); // <-- INI YANG KITA BUTUHKAN
+        Route::get('/users', [UserController::class, 'index'])->name('users.index'); 
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
