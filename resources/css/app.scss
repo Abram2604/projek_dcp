@@ -24,10 +24,21 @@ $sidebar-width: 280px;
 // 4. Custom CSS Tambahan
 body {
     background-color: #f8fafc;
-    font-size: 0.925rem;
+    font-size: 0.875rem; /* Font default diperkecil ke 14px */
+    font-family: 'Inter', sans-serif;
 }
 
-// === NEW SIDEBAR STYLING ===
+/* Helper Font Sizes */
+.fs-7 { font-size: 0.9rem !important; }
+.fs-8 { font-size: 0.75rem !important; }
+
+/* Custom Badge Colors */
+.bg-success-subtle { background-color: #dcfce7 !important; }
+.bg-danger-subtle { background-color: #fee2e2 !important; }
+.bg-warning-subtle { background-color: #fef3c7 !important; }
+.bg-primary-subtle { background-color: #e0e7ff !important; }
+
+/* === SIDEBAR STYLING === */
 $indigo-900: #312e81;
 $indigo-800: #3730a3;
 $indigo-700: #4338ca;
@@ -360,16 +371,14 @@ $indigo-200: #c7d2fe;
             }
         }
     }
-} // <--- PENUTUP LOGIN PAGE
+}
 
 // === STYLE UNTUK MODAL QR (GLOBAL) ===
-// --- Dipindahkan keluar dari login-page agar terbaca di dashboard ---
-
 .qr-card {
     border-radius: 1.5rem;
     overflow: hidden;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    background-color: #312e81; /* Indigo 900 */
+    background-color: #312e81; 
     color: white;
 }
 
@@ -412,7 +421,7 @@ $indigo-200: #c7d2fe;
 }
 
 .qr-footer {
-    background-color: #3730a3; /* Indigo 800 */
+    background-color: #3730a3; 
     padding: 1rem;
     text-align: center;
 }
@@ -434,3 +443,56 @@ $indigo-200: #c7d2fe;
     .my-pagination nav > div.d-sm-flex > div:first-child {
         display: none !important;
     }
+
+:root {
+    --indigo-600: #4f46e5;
+    --indigo-50: #eef2ff;
+    --indigo-100: #e0e7ff;
+}
+
+.text-indigo { color: var(--indigo-600) !important; }
+.bg-indigo { background-color: var(--indigo-600) !important; }
+.bg-indigo-50 { background-color: var(--indigo-50) !important; }
+.border-indigo-100 { border-color: var(--indigo-100) !important; }
+
+.rounded-xl { border-radius: 0.75rem !important; } 
+.rounded-2xl { border-radius: 1rem !important; }    
+.rounded-3xl { border-radius: 1.5rem !important; } 
+
+.shadow-soft { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important; }
+
+/* Custom Nav Pills */
+.nav-pills-custom .nav-link {
+    color: #4b5563; 
+    background: transparent;
+    font-weight: 600;
+    padding: 0.5rem 1.5rem;
+    border-radius: 0.75rem;
+    margin-right: 0.5rem;
+    transition: all 0.2s;
+}
+.nav-pills-custom .nav-link:hover {
+    background-color: #f3f4f6;
+}
+.nav-pills-custom .nav-link.active {
+    background-color: var(--indigo-600);
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.4);
+}
+
+/* Dashed Border untuk Upload */
+.border-dashed {
+    border-style: dashed !important;
+    border-width: 2px !important;
+}
+
+/* Sticky Table untuk Rekap */
+.table-matrix-container {
+    max-height: 600px;
+    overflow: auto;
+    position: relative;
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+}
+.sticky-col { position: sticky; background: white; z-index: 10; }
+.sticky-header { position: sticky; top: 0; background: #f3f4f6; z-index: 20; }

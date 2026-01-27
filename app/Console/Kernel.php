@@ -12,7 +12,12 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Jalankan Auto Checkout setiap hari pukul 23:55 malam
+        $schedule->command('absensi:auto-checkout')
+                 ->dailyAt('23:55')
+                 ->timezone('Asia/Jakarta');
+                 
+        // Opsional: Bisa tambahkan backup database atau tugas lain disini
     }
 
     /**
