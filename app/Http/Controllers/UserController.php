@@ -6,25 +6,35 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class UserController extends Controller
 {
-    public function index(Request $request)
-    {
-        // 1. Ambil data via SP
-        $search = $request->input('search');
-        
-        // Panggil SP: sp_anggota_list(p_search, p_status_aktif)
-        // Kita set p_status_aktif = NULL agar semua (aktif & non-aktif) muncul, atau 1 jika mau aktif saja
-        $users = DB::select('CALL sp_anggota_list(?, ?)', [$search, null]);
+ public function index(Request $request)
+{
+    $search = $request->input('search');
 
-        // 2. Ambil data master untuk Dropdown (Divisi & Jabatan)
-        $divisi = DB::select('CALL sp_divisi_list()');
-        // Anggap tabel Jabatan sederhana, kita query biasa saja
-        $jabatan = DB::table('Jabatan')->orderBy('nama_jabatan', 'asc')->get();
+    $allUsers = DB::select('CALL sp_anggota_list(?, ?)', [$search, null]);
 
-        return view('pages.users.index', compact('users', 'divisi', 'jabatan'));
-    }
+    $page = $request->input('page', 1); 
+    $perPage = 10;
+    $offset = ($page * $perPage) - $perPage; 
+
+    $itemsForCurrentPage = array_slice($allUsers, $offset, $perPage, true);
+
+    $users = new LengthAwarePaginator(
+        $itemsForCurrentPage, 
+        count($allUsers),    
+        $perPage,             
+        $page,               
+        ['path' => $request->url(), 'query' => $request->query()]
+    );
+
+    $divisi = DB::select('CALL sp_divisi_list()');
+    $jabatan = DB::table('Jabatan')->orderBy('nama_jabatan', 'asc')->get();
+
+    return view('pages.users.index', compact('users', 'divisi', 'jabatan'));
+}
     public function activate($id)
 {
     // Kita update manual saja query-nya agar simpel

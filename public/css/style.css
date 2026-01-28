@@ -439,12 +439,23 @@ body {
     text-align: center;
 }
 
-/* Efek Backdrop Blur untuk Modal Bootstrap */
+
 .modal-backdrop.show {
     opacity: 0.7;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
 }
+    .my-pagination .small.text-muted {
+        display: none !important;
+    }
+   
+    .my-pagination nav > div.d-sm-flex {
+        justify-content: center !important;
+    }
+  
+    .my-pagination nav > div.d-sm-flex > div:first-child {
+        display: none !important;
+    }
 
 :root {
     --indigo-600: #4f46e5;
