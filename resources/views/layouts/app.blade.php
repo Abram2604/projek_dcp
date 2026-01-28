@@ -7,33 +7,42 @@
     
     <title>@yield('title', 'Sistem DPC SPSI')</title>
     
-    <!-- 1. FontAwesome CDN -->
+    <!-- 1. FONT AWESOME (Icons) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Load SCSS & JS via Vite -->
+    <!-- 2. BOOTSTRAP CSS (dari folder public) -->
+    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
     
-    <!-- 2. Vite (Load CSS & JS) -->
-    @vite(['resources/css/app.scss', 'resources/js/app.js'])
+    <!-- 3. CUSTOM CSS (dari folder public) -->
+    <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    
 </head>
 <body>
+
+    <!-- OVERLAY (Untuk Sidebar Mobile) -->
+    <div class="sidebar-overlay"></div>
 
     <!-- Panggil Sidebar -->
     @include('partials.sidebar')
 
     <main class="main-content">
         
-        <!-- 5. Panggil Navbar (YANG ADA NOTIFIKASINYA) -->
-        <!-- Pastikan nama filenya sesuai lokasi kamu menyimpan navbar tadi -->
+        <!-- Panggil Navbar -->
         @include('partials.navbar')
 
-        <!-- 6. Konten Halaman -->
+        <!-- Konten Halaman -->
         @yield('content')
-        
         
     </main>
 
-    <!-- 7. Script Bootstrap (Taruh di bawah agar loading cepat) -->
-       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 4. JQUERY (WAJIB paling atas sebelum script lain) -->
+    <script src="https://code.jquery.com/jquery-4.0.0.js"></script>
+
+    <!-- 5. BOOTSTRAP JS (Sudah include Popper.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- 6. CUSTOM JS (dari folder public) -->
+    <script src="{{ asset('js/script.js') }}"></script>
 
 </body>
 </html>

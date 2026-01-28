@@ -1,11 +1,10 @@
 <aside class="sidebar-wrapper">
     <!-- 1. HEADER -->
     <div class="sidebar-header">
-          <button id="sidebarClose" class="btn btn-link text-white d-lg-none p-0 border-0">
-        <i class="fa-solid fa-xmark fa-xl"></i>
-    </button>
+        <button id="sidebarClose" class="btn btn-link text-white d-lg-none p-0 border-0">
+            <i class="fa-solid fa-xmark fa-xl"></i>
+        </button>
         <div class="logo-box">
-            <!-- Ganti dengan <img> jika ada logo.png, atau pakai icon -->
             <img src="{{ asset('img/logo.png') }}" alt="Logo SPSI" style="width: 70%; height: auto;">
         </div>
         <div class="app-title">
@@ -13,80 +12,77 @@
             <p>SPSI KARAWANG</p>
         </div>
     </div>
-       
 
     <!-- 2. MENU -->
     <nav class="sidebar-menu">
         @php
-            // Ambil data dari session (karena kita pakai AuthController yang simpan session)
             $jabatan = session('user_jabatan', 'Anggota');
             $level   = session('user_level', 'ANGGOTA');
             $isBPH   = ($level === 'BPH');
-            $isOrg   = str_contains($jabatan, 'Organisasi');
+            $isPimpinanDPC  = ($jabatan === 'Ketua DPC' || $jabatan === 'Bendahara');
         @endphp
 
         <!-- Dashboard -->
-        <a href="{{ url('/dashboard') }}" class="nav-item {{ Request::is('dashboard') ? 'active' : '' }}">
+        <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <i class="fa-solid fa-table-columns"></i>
             <span>Dashboard</span>
         </a>
 
         <!-- Absensi -->
-        <a href="{{ url('/absensi') }}" class="nav-item {{ Request::is('absensi*') ? 'active' : '' }}">
+        <a href="{{ route('absensi.index') }}" class="nav-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}">
             <i class="fa-solid fa-calendar-check"></i>
             <span>Absensi</span>
         </a>
 
-        <!-- Laporan -->
-        <a href="{{ url('/laporan') }}" class="nav-item {{ Request::is('laporan*') ? 'active' : '' }}">
+        <!-- Laporan Harian (FIXED: Menggunakan Route Name agar spesifik) -->
+        <a href="{{ route('laporan.index') }}" class="nav-item {{ request()->routeIs('laporan.*') ? 'active' : '' }}">
             <i class="fa-regular fa-file-lines"></i>
             <span>Laporan Harian</span>
         </a>
 
         <!-- Program Kerja -->
-        <a href="{{ url('/progja') }}" class="nav-item {{ Request::is('progja*') ? 'active' : '' }}">
+        <a href="{{ route('progja.index') }}" class="nav-item {{ request()->routeIs('progja.*') ? 'active' : '' }}">
             <i class="fa-solid fa-chart-line"></i>
             <span>Program Kerja</span>
         </a>
         
-        <a href="{{ route('profile') }}" class="nav-item {{ Request::is('profile*') ? 'active' : '' }}">
+        <a href="{{ route('profile') }}" class="nav-item {{ request()->routeIs('profile') ? 'active' : '' }}">
             <i class="fa-solid fa-id-card"></i>
             <span>Profil Saya</span>
         </a>
 
         <!-- Keuangan (Hanya BPH) -->
         @if($isBPH)
-        <a href="{{ url('/keuangan') }}" class="nav-item {{ Request::is('keuangan*') ? 'active' : '' }}">
+        <a href="{{ route('keuangan.index') }}" class="nav-item {{ request()->routeIs('keuangan.*') ? 'active' : '' }}">
             <i class="fa-solid fa-wallet"></i>
             <span>Keuangan</span>
         </a>
         @endif
 
+        <!-- Laporan Keuangan (Ketua & Bendahara) -->
+        @if($isPimpinanDPC)
+        <a href="{{ route('laporan_keuangan.index') }}" class="nav-item {{ request()->routeIs('laporan_keuangan.*') ? 'active' : '' }}">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Laporan Keuangan</span>
+        </a>
+        @endif
+
         @php
-            $userJabatan = session('user_jabatan'); // Ambil jabatan dari session login
+            $userJabatan = session('user_jabatan'); 
             $isPimpinan  = ($userJabatan === 'Ketua DPC' || $userJabatan === 'Sekretaris');
+            $isOrg   = str_contains($jabatan, 'Organisasi'); 
+            $canManageUser = ($jabatan === 'Ketua DPC' || $jabatan === 'Sekretaris' || $isOrg);
         @endphp
 
         @if($isPimpinan)
-        <a href="{{ route('data_anggota.index') }}" class="nav-item {{ Request::is('data-anggota*') ? 'active' : '' }}">
+        <a href="{{ route('data_anggota.index') }}" class="nav-item {{ request()->routeIs('data_anggota.*') ? 'active' : '' }}">
             <i class="fa-solid fa-database"></i>
             <span>Data Anggota</span>
         </a>
         @endif
 
-
-        <!-- Users (Ketua, Sekretaris & Organisasi) -->
-        @php
-            $jabatan = session('user_jabatan');
-            // Cek apakah jabatannya mengandung kata "Organisasi"
-            $isOrg   = str_contains($jabatan, 'Organisasi'); 
-            
-            // Cek spesifik jabatan (Bendahara tidak masuk disini)
-            $canManageUser = ($jabatan === 'Ketua DPC' || $jabatan === 'Sekretaris' || $isOrg);
-        @endphp
-
         @if($canManageUser)
-        <a href="{{ url('/users') }}" class="nav-item {{ Request::is('users*') ? 'active' : '' }}">
+        <a href="{{ route('users.index') }}" class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
             <i class="fa-solid fa-users-gear"></i>
             <span>Manajemen User</span>
         </a>

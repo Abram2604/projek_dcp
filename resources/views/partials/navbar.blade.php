@@ -4,8 +4,8 @@
     <div class="d-flex align-items-center gap-3">
         <!-- Tombol Mobile Toggle -->
           <button id="sidebarToggle" class="btn btn-light d-lg-none shadow-sm border-0 me-3">
-                    <i class="fa-solid fa-bars text-primary fa-lg"></i>
-                </button>
+                <i class="fa-solid fa-bars text-primary fa-lg"></i>
+            </button>
         <div>
             <h4 class="fw-bold text-dark m-0">@yield('header_title')</h4>
             <small class="text-muted">@yield('header_subtitle')</small>

@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use App\Exports\DataAnggotaExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class DataAnggotaController extends Controller
 {
@@ -16,7 +19,7 @@ class DataAnggotaController extends Controller
         $dataPuk = DB::select('CALL sp_puk_list(?)', [$search]);
         
         // 2. Hitung Total (Untuk Footer Tabel)
-        // Kita hitung berdasarkan kolom 'jumlah_anggota' (data real)
+        // Kita hitung berdasarkan kolom 'jumlah_anggota' (data real dari PUK Anak)
         $totalAnggota = 0;
         foreach($dataPuk as $p) {
             $totalAnggota += $p->jumlah_anggota;
@@ -41,7 +44,7 @@ class DataAnggotaController extends Controller
             'manual_total_anggota' => 'nullable|integer' // Validasi untuk kolom baru
         ]);
 
-        // Panggil SP Create dengan 10 Parameter (termasuk manual_total_anggota)
+        // Panggil SP Create dengan 10 Parameter
         DB::statement('CALL sp_puk_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
             $request->nama_perusahaan,
             $request->no_pencatatan,
@@ -91,18 +94,52 @@ class DataAnggotaController extends Controller
         return redirect()->back()->with('success', 'Data PUK dihapus.');
     }
 
-    // Fungsi Update Tanda Tangan
+    // --- FITUR BARU: EXPORT EXCEL VIA BACKEND ---
+    public function exportExcel(Request $request)
+    {
+        $search = $request->input('search');
+        
+        // 1. Ambil Data
+        $dataPuk = DB::select('CALL sp_puk_list(?)', [$search]);
+        
+        // 2. Hitung Total
+        $totalAnggota = 0;
+        foreach($dataPuk as $p) $totalAnggota += $p->jumlah_anggota;
+        
+        // 3. Ambil Tanda Tangan
+        $ttd = DB::table('Pengaturan_Tanda_Tangan')->first();
+
+        // 4. Download Excel menggunakan Class Export
+        return Excel::download(new DataAnggotaExport($dataPuk, $totalAnggota, $ttd), 'Data_Anggota_DPC_SPSI_'.date('Y').'.xlsx');
+    }
+
+    // --- FITUR UPDATE: ATUR TTD + UPLOAD GAMBAR ---
     public function updateTtd(Request $request)
     {
-        DB::table('Pengaturan_Tanda_Tangan')->where('id', 1)->update([
+        // Data Teks
+        $data = [
             'kadis_nama' => $request->kadis_nama,
             'kadis_nip' => $request->kadis_nip,
             'ketua_nama' => $request->ketua_nama,
             'sekretaris_nama' => $request->sekretaris_nama,
             'kota_surat' => $request->kota_surat,
             'updated_at' => now()
-        ]);
+        ];
 
-        return redirect()->back()->with('success', 'Format tanda tangan berhasil diperbarui.');
+        // Handle File Upload (Jika ada gambar baru diupload)
+        if ($request->hasFile('ttd_kadis')) {
+            $data['path_ttd_kadis'] = $request->file('ttd_kadis')->store('ttd', 'public');
+        }
+        if ($request->hasFile('ttd_ketua')) {
+            $data['path_ttd_ketua'] = $request->file('ttd_ketua')->store('ttd', 'public');
+        }
+        if ($request->hasFile('ttd_sekretaris')) {
+            $data['path_ttd_sekretaris'] = $request->file('ttd_sekretaris')->store('ttd', 'public');
+        }
+
+        // Update Database
+        DB::table('Pengaturan_Tanda_Tangan')->where('id', 1)->update($data);
+
+        return redirect()->back()->with('success', 'Format tanda tangan & gambar berhasil diperbarui.');
     }
 }

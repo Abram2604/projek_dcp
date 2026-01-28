@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Database PUK')
-@section('header_title', 'Database Anggota (PUK)')
+@section('title', 'Database DPC')
+@section('header_title', 'Database Anggota')
 @section('header_subtitle', 'Manajemen verifikasi data unit kerja DPC FSP LEM SPSI Karawang.')
 
 @section('content')
@@ -13,7 +13,7 @@
 @endif
 
 <style>
-    /* Print Style: Layout Presisi */
+
     @media print {
         @page { size: landscape; margin: 0.5cm; }
         body { -webkit-print-color-adjust: exact; font-family: 'Arial', sans-serif; }
@@ -33,7 +33,6 @@
     }
 </style>
 
-<!-- TOOLS HEADER -->
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3 no-print">
     <form action="{{ route('data_anggota.index') }}" method="GET" class="flex-grow-1 w-100" style="max-width: 400px;">
         <div class="input-group shadow-sm">
@@ -52,10 +51,10 @@
         <button onclick="window.print()" class="btn btn-white border text-danger fw-bold shadow-sm">
             <i class="fa-solid fa-print me-2"></i> Cetak PDF
         </button>
-        
-        <button onclick="exportToExcel()" class="btn btn-white border text-success fw-bold shadow-sm">
+
+        <a href="{{ route('data_anggota.export') }}" class="btn btn-white border text-success fw-bold shadow-sm">
             <i class="fa-solid fa-file-excel me-2"></i> Export Excel
-        </button>
+        </a>
         
         @if($canEdit)
             <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAdd">
@@ -65,10 +64,8 @@
     </div>
 </div>
 
-<!-- MAIN TABLE CONTAINER -->
 <div class="card border-0 shadow-sm rounded-0 p-3" id="printable-area">
     
-    <!-- JUDUL LAPORAN (PRINT ONLY) -->
     <div class="d-none d-print-block print-header">
         DAFTAR NAMA ANGGOTA DPC FSP LEM SPSI KARAWANG TAHUN {{ date('Y') }}
     </div>
@@ -94,20 +91,36 @@
                     <th>SEKRETARIS</th>
                 </tr>
             </thead>
-
-                <!-- DATA DARI DATABASE -->
+            <tbody style="font-size: 12px;">
+                
+                {{-- LOOP DATA DATABASE --}}
                 @forelse($dataPuk as $index => $p)
-                <tr>
-                    <td class="text-center">{{ $index + 1 }}</td>
+                @php
+                    // Logika: Jika ada manual_total_anggota, anggap ini baris INDUK (Row I)
+                    $isInduk = !empty($p->manual_total_anggota);
+                    $nomorUrut = $isInduk ? 'I' : ($index + ($dataPuk[0]->manual_total_anggota ? 0 : 1)); 
+                @endphp
+
+                <tr class="{{ $isInduk ? 'fw-bold' : '' }}">
+                    <td class="text-center">{{ $isInduk ? 'I' : $loop->iteration }}</td>
+                    
                     <td>{{ $p->nama_federasi }}</td>
                     <td>{{ $p->no_pencatatan_federasi }}</td>
                     <td>{{ $p->nama_perusahaan }}</td>
                     <td>{{ $p->no_pencatatan }}</td>
-                    <td class="text-center fw-bold">{{ $p->jumlah_anggota }}</td>
-                    <td class="text-center">{{ $p->hasil_verifikasi > 0 ? $p->hasil_verifikasi : '' }}</td>
                     
-                    {{-- TOTAL ANGGOTA (MANUAL) --}}
-                    <td class="text-center bg-light fw-bold text-primary">
+                    {{-- JML ANGGOTA --}}
+                    <td class="text-center fw-bold">
+                        {{ $p->jumlah_anggota > 0 ? $p->jumlah_anggota : '' }}
+                    </td>
+
+                    {{-- VERIFIKASI --}}
+                    <td class="text-center">
+                        {{ $p->hasil_verifikasi > 0 ? $p->hasil_verifikasi : '' }}
+                    </td>
+                    
+                    {{-- TOTAL ANGGOTA (Hanya muncul jika diisi manual / Induk) --}}
+                    <td class="text-center {{ $isInduk ? 'text-primary' : '' }}">
                         {{ $p->manual_total_anggota ? number_format($p->manual_total_anggota, 0, ',', '.') : '' }}
                     </td> 
                     
@@ -135,11 +148,11 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="12" class="text-center py-4 text-muted no-print">Data belum tersedia.</td>
+                    <td colspan="12" class="text-center py-4 text-muted no-print">Data belum tersedia. Silakan tambah data PUK.</td>
                 </tr>
                 @endforelse
 
-                <!-- FOOTER TOTAL -->
+                <!-- FOOTER TOTAL (Otomatis Hitung dari data yang tampil) -->
                 <tr style="font-weight: bold; background-color: #f8f9fa;">
                     <td colspan="5" class="text-end px-3">JUMLAH TOTAL ANGGOTA SP/SB TERDAFTAR</td>
                     <td class="text-center">{{ number_format($totalAnggota, 0, ',', '.') }}</td>
@@ -152,32 +165,63 @@
         </table>
     </div>
 
-    <!-- TANDA TANGAN -->
-    <div class="d-none d-print-block">
+    <!-- TANDA TANGAN (Hanya Muncul Saat Print PDF Lewat Browser) -->
+<div class="d-none d-print-block">
         <table class="sig-table">
             <tr>
+                <!-- KIRI: KADIS -->
                 <td width="40%">
                     <p>Mengetahui,</p>
                     <p class="fw-bold">KEPALA DINAS TENAGA KERJA<br>KABUPATEN KARAWANG</p>
-                    <div class="sig-space"></div>
+                    
+                    <div class="sig-space d-flex align-items-end justify-content-center">
+                        @if($ttd->path_ttd_kadis)
+                            {{-- Gunakan asset() agar mengarah ke http://localhost:8000/storage/... --}}
+                            <img src="{{ asset('storage/'.$ttd->path_ttd_kadis) }}" style="height: 70px; object-fit: contain;">
+                        @else
+                            <div style="height: 70px;"></div>
+                        @endif
+                    </div>
+
                     <p class="fw-bold text-underline">{{ $ttd->kadis_nama }}</p>
                     <p>Pembina TK. I / NIP : {{ $ttd->kadis_nip }}</p>
                 </td>
+
+                <!-- TENGAH: GAP -->
                 <td width="10%"></td>
+
+                <!-- KANAN: DPC -->
                 <td width="50%">
                     <p>{{ $ttd->kota_surat }}, {{ \Carbon\Carbon::now()->isoFormat('D MMMM Y') }}</p>
                     <p class="fw-bold">DPC FSP LEM SPSI KARAWANG</p>
-                    <div class="sig-space"></div>
+                    
+                    <div class="sig-space" style="height: 20px;"></div>
+
                     <table style="width: 100%; border: none;">
                         <tr>
-                            <td style="border: none; text-align: center; width: 50%;">
-                                <p class="fw-bold">KETUA</p>
-                                <br><br>
+                            <!-- KETUA -->
+                            <td style="border: none; text-align: center; width: 50%; vertical-align: bottom;">
+                                <p class="fw-bold mb-0">KETUA</p>
+                                <div class="d-flex justify-content-center align-items-center" style="height: 70px;">
+                                    @if($ttd->path_ttd_ketua)
+                                        <img src="{{ asset('storage/'.$ttd->path_ttd_ketua) }}" style="height: 60px; object-fit: contain;">
+                                    @else
+                                        <div style="height: 60px;"></div>
+                                    @endif
+                                </div>
                                 <p class="fw-bold text-underline">{{ $ttd->ketua_nama }}</p>
                             </td>
-                            <td style="border: none; text-align: center; width: 50%;">
-                                <p class="fw-bold">SEKRETARIS</p>
-                                <br><br>
+
+                            <!-- SEKRETARIS -->
+                            <td style="border: none; text-align: center; width: 50%; vertical-align: bottom;">
+                                <p class="fw-bold mb-0">SEKRETARIS</p>
+                                <div class="d-flex justify-content-center align-items-center" style="height: 70px;">
+                                    @if($ttd->path_ttd_sekretaris)
+                                        <img src="{{ asset('storage/'.$ttd->path_ttd_sekretaris) }}" style="height: 60px; object-fit: contain;">
+                                    @else
+                                        <div style="height: 60px;"></div>
+                                    @endif
+                                </div>
                                 <p class="fw-bold text-underline">{{ $ttd->sekretaris_nama }}</p>
                             </td>
                         </tr>
@@ -186,7 +230,6 @@
             </tr>
         </table>
     </div>
-</div>
 
 <!-- ================= MODALS ================= -->
 @if($canEdit)
@@ -194,17 +237,23 @@
 <div class="modal fade" id="modalTtd" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form action="{{ route('data_anggota.ttd') }}" method="POST">
+            <form action="{{ route('data_anggota.ttd') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-header"><h5 class="modal-title fw-bold">Atur Tanda Tangan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
-                    <h6 class="text-primary fw-bold">1. Disnaker</h6>
+                    <h6 class="text-primary fw-bold">1. Dinas Tenaga Kerja</h6>
                     <div class="mb-2"><label>Nama Kadis</label><input type="text" name="kadis_nama" class="form-control" value="{{ $ttd->kadis_nama }}"></div>
-                    <div class="mb-3"><label>NIP</label><input type="text" name="kadis_nip" class="form-control" value="{{ $ttd->kadis_nip }}"></div>
-                    <h6 class="text-primary fw-bold">2. DPC SPSI</h6>
+                    <div class="mb-2"><label>NIP</label><input type="text" name="kadis_nip" class="form-control" value="{{ $ttd->kadis_nip }}"></div>
+                    <div class="mb-3"><label>Upload TTD Kadis (Optional)</label><input type="file" name="ttd_kadis" class="form-control form-control-sm"></div>
+
+                    <h6 class="text-primary fw-bold">2. Pengurus DPC</h6>
                     <div class="mb-2"><label>Nama Ketua</label><input type="text" name="ketua_nama" class="form-control" value="{{ $ttd->ketua_nama }}"></div>
+                    <div class="mb-2"><label>Upload TTD Ketua</label><input type="file" name="ttd_ketua" class="form-control form-control-sm"></div>
+                    
                     <div class="mb-2"><label>Nama Sekretaris</label><input type="text" name="sekretaris_nama" class="form-control" value="{{ $ttd->sekretaris_nama }}"></div>
-                    <div class="mb-2"><label>Kota</label><input type="text" name="kota_surat" class="form-control" value="{{ $ttd->kota_surat }}"></div>
+                    <div class="mb-2"><label>Upload TTD Sekretaris</label><input type="file" name="ttd_sekretaris" class="form-control form-control-sm"></div>
+
+                    <div class="mb-2"><label>Kota Surat</label><input type="text" name="kota_surat" class="form-control" value="{{ $ttd->kota_surat }}"></div>
                 </div>
                 <div class="modal-footer"><button type="submit" class="btn btn-primary w-100">Simpan</button></div>
             </form>
@@ -246,7 +295,7 @@
                                 
                                 {{-- INPUT TAMBAHAN: TOTAL ANGGOTA MANUAL --}}
                                 <div class="col-md-12">
-                                    <label class="small fw-bold text-muted">Total Anggota SP/SB (Opsional)</label>
+                                    <label class="small fw-bold text-muted">Total Anggota SP/SB (Opsional - Diisi untuk Data Induk)</label>
                                     <input type="number" name="manual_total_anggota" id="inp_total_manual" class="form-control bg-light" placeholder="Isi hanya jika perlu (misal data Induk)">
                                     <small class="text-muted" style="font-size: 10px;">Biarkan kosong jika tidak ada data khusus.</small>
                                 </div>
@@ -273,16 +322,12 @@
 </div>
 @endif
 
-{{-- JAVASCRIPT EXPORT & EDIT --}}
-<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 <script>
-    // 1. EDIT PUK
+
     function editPuk(data) {
         document.getElementById('modalTitle').innerText = 'Edit Data PUK';
         document.getElementById('formPuk').action = `/data-anggota/${data.id}`;
         document.getElementById('methodPut').innerHTML = '<input type="hidden" name="_method" value="PUT">';
-        
-        // Isi Form
         document.getElementById('inp_federasi').value = data.nama_federasi;
         document.getElementById('inp_no_federasi').value = data.no_pencatatan_federasi;
         document.getElementById('inp_perusahaan').value = data.nama_perusahaan;
@@ -292,14 +337,11 @@
         document.getElementById('inp_afiliasi').value = data.afiliasi;
         document.getElementById('inp_ketua').value = data.nama_ketua;
         document.getElementById('inp_sekre').value = data.nama_sekretaris;
-        
-        // Isi Total Manual
         document.getElementById('inp_total_manual').value = data.manual_total_anggota;
 
         new bootstrap.Modal(document.getElementById('modalAdd')).show();
     }
 
-    // 2. RESET MODAL
     const modalAdd = document.getElementById('modalAdd');
     if(modalAdd) {
         modalAdd.addEventListener('hidden.bs.modal', event => {
@@ -310,50 +352,6 @@
         });
     }
 
-    // 3. EXPORT EXCEL
-    function exportToExcel() {
-        var wb = XLSX.utils.book_new();
-        
-        // Ambil Data Tabel
-        var table = document.getElementById("tableData");
-        var ws = XLSX.utils.table_to_sheet(table);
-
-        // Hapus Kolom Aksi
-        const range = XLSX.utils.decode_range(ws['!ref']);
-        for (let R = range.s.r; R <= range.e.r; ++R) {
-            let C = 11; // Kolom L (Aksi)
-            let cellRef = XLSX.utils.encode_cell({r: R, c: C});
-            delete ws[cellRef];
-        }
-        
-        // Tambahkan Tanda Tangan
-        let lastRow = range.e.r + 2; 
-
-        function addCell(ws, row, col, value) {
-            let ref = XLSX.utils.encode_cell({r: row, c: col});
-            ws[ref] = { t: 's', v: value };
-        }
-
-        addCell(ws, lastRow, 1, "Mengetahui,");
-        addCell(ws, lastRow + 1, 1, "KEPALA DINAS TENAGA KERJA KABUPATEN KARAWANG");
-        addCell(ws, lastRow + 5, 1, "{{ $ttd->kadis_nama }}");
-        addCell(ws, lastRow + 6, 1, "Pembina TK. I / NIP : {{ $ttd->kadis_nip }}");
-
-        addCell(ws, lastRow, 8, "{{ $ttd->kota_surat }}, " + new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }));
-        addCell(ws, lastRow + 1, 8, "DPC FSP LEM SPSI KARAWANG");
-        addCell(ws, lastRow + 3, 8, "KETUA");
-        addCell(ws, lastRow + 7, 8, "{{ $ttd->ketua_nama }}");
-        addCell(ws, lastRow + 3, 10, "SEKRETARIS");
-        addCell(ws, lastRow + 7, 10, "{{ $ttd->sekretaris_nama }}");
-
-        ws['!ref'] = XLSX.utils.encode_range({
-            s: { c: 0, r: 0 },
-            e: { c: 11, r: lastRow + 8 }
-        });
-
-        XLSX.utils.book_append_sheet(wb, ws, "Data PUK");
-        XLSX.writeFile(wb, "Data_Anggota_DPC_SPSI_{{ date('Y') }}.xlsx");
-    }
 </script>
 
 @endsection

@@ -11,41 +11,34 @@ class ProgjaController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $levelAkses = session('user_level'); // BPH, KORBID, ANGGOTA
+        $levelAkses = session('user_level');
         
-        // 1. Logika Filter Divisi
-        // Jika BPH, filter berdasarkan inputan 'divisi_id' (dari dropdown filter).
-        // Jika Anggota/Korbid, filter terkunci ke id_divisi mereka sendiri.
         $filterDivisi = ($levelAkses === 'BPH') ? $request->input('divisi_id') : $user->id_divisi;
-        
         $search = $request->input('search');
 
-        // 2. Ambil List Progja (Stored Procedure menghandle NULL sebagai "Semua")
         $progja = DB::select('CALL sp_progja_list(?, ?)', [$filterDivisi, $search]);
-
-        // 3. Ambil Statistik
         $statsRaw = DB::select('CALL sp_progja_stats(?)', [$filterDivisi]);
         $stats = $statsRaw[0];
-
-        // 4. [BARU] Ambil Evaluasi BPH Terbaru
-        // Mengambil data evaluasi terakhir berdasarkan filter divisi yang dipilih
         $evaluasiRaw = DB::select('CALL sp_evaluasi_get_latest(?)', [$filterDivisi]);
-        $evaluasi = $evaluasiRaw[0] ?? null; // Bisa null jika belum ada evaluasi
+        $evaluasi = $evaluasiRaw[0] ?? null;
 
-        // 5. Ambil List Divisi (Untuk BPH: Dropdown Filter & Modal Input)
-        $divisiList = [];
-        if($levelAkses === 'BPH'){
-            $divisiList = DB::select('CALL sp_divisi_list()');
+        $queryRapbo = DB::table('RAPBO')
+                        ->join('Divisi', 'RAPBO.id_divisi', '=', 'Divisi.id')
+                        ->select('RAPBO.*', 'Divisi.nama_divisi')
+                        ->orderBy('RAPBO.id', 'asc');
+
+        if ($filterDivisi) {
+            $queryRapbo->where('RAPBO.id_divisi', $filterDivisi);
         }
+        $rapboList = $queryRapbo->get();
 
-        // Kirim variabel baru (evaluasi & filterDivisi) ke View
+        $divisiList = ($levelAkses === 'BPH') ? DB::select('CALL sp_divisi_list()') : [];
+
+        $activeTab = $request->input('tab', 'progja');
+
         return view('pages.progja.index', compact(
-            'progja', 
-            'stats', 
-            'levelAkses', 
-            'divisiList', 
-            'evaluasi', 
-            'filterDivisi'
+            'progja', 'stats', 'levelAkses', 'divisiList', 'evaluasi', 'filterDivisi',
+            'rapboList', 'activeTab' 
         ));
     }
 
@@ -53,17 +46,21 @@ class ProgjaController extends Controller
     {
         $request->validate([
             'nama_program' => 'required',
+            'target' => 'required', // Baru
+            'action' => 'required', // Baru
             'tanggal_selesai' => 'required|date',
             'anggaran' => 'required|numeric'
         ]);
 
         $user = Auth::user();
-        // Jika BPH, ambil dari input form, jika Divisi, ambil otomatis dari akun
         $idDivisi = ($request->input('id_divisi')) ? $request->input('id_divisi') : $user->id_divisi;
 
-        DB::statement('CALL sp_progja_create(?, ?, ?, ?, ?)', [
+        // Panggil SP dengan urutan parameter baru
+        DB::statement('CALL sp_progja_create(?, ?, ?, ?, ?, ?, ?)', [
             $idDivisi,
             $request->nama_program,
+            $request->target,       // Baru
+            $request->action,       // Baru
             $request->tanggal_selesai,
             $request->anggaran,
             $user->id

@@ -1,19 +1,9 @@
 {
     "private": true,
-    "type": "module",
     "scripts": {
-        "dev": "vite",
-        "build": "vite build"
+        "start": "echo 'Frontend is running in native mode. No script needed.' && exit 0"
     },
     "devDependencies": {
-        "axios": "^1.6.4",
-        "laravel-vite-plugin": "^2.0.1",
-        "vite": "^7.3.1"
-    },
-    "dependencies": {
-        "@popperjs/core": "^2.11.8",
-        "bootstrap": "^5.3.8",
-        "jquery": "^3.7.1",
-        "sass": "^1.97.2"
+        "axios": "^1.6.4"
     }
 }
