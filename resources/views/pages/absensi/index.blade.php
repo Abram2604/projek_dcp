@@ -156,7 +156,7 @@
                         <div class="fw-bold fs-6 mb-0 text-uppercase">{{ $user->nama_lengkap }}</div>
                         <div class="text-indigo-200 fs-8 mb-3">{{ session('user_jabatan') }}</div>
                         
-                        <a href="{{ route('absensi.download_id_card') }}" class="btn btn-sm btn-white text-indigo fw-bold rounded-pill px-4 shadow-sm fs-8">
+                        <a href="{{ route('absensi.download_id_card') }}" class="btn btn-sm bg-white btn-white text-indigo fw-bold rounded-pill px-4 shadow-sm fs-8">
                             <i class="fa-solid fa-download me-1"></i> ID Card
                         </a>
                     </div>
