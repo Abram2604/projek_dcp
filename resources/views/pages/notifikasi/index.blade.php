@@ -58,7 +58,7 @@
                 @else
                     {{-- State Kosong --}}
                     <div class="text-center py-5">
-                        <img src="https://illustrations.popsy.co/gray/surr-no-mail.svg" alt="Empty" style="width: 150px; opacity: 0.6;">
+                        <img src="https://cdn-icons-png.flaticon.com/512/11202/11202705.png" alt="Empty" style="width: 150px; opacity: 0.6;">
                         <h6 class="fw-bold mt-3 text-muted">Tidak ada notifikasi</h6>
                         <p class="small text-muted">Semua pemberitahuan akan muncul di sini.</p>
                     </div>

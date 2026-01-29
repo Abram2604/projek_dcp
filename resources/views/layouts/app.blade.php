@@ -36,7 +36,7 @@
     </main>
 
     <!-- 4. JQUERY (WAJIB paling atas sebelum script lain) -->
-    <script src="https://code.jquery.com/jquery-4.0.0.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
     <!-- 5. BOOTSTRAP JS (Sudah include Popper.js) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
