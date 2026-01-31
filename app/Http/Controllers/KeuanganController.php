@@ -86,12 +86,14 @@ class KeuanganController extends Controller
                     $saldoValue,
                     $userId,
                 ]);
-                 DB::statement('CALL sp_notifikasi_saldo_divisi(?, ?, ?, ?)', [
+                 if ($saldoValue > 0) {
+                DB::statement('CALL sp_notif_saldo_divisi(?, ?, ?, ?)', [
                     (int) $divisiId,
                     $bulan,
                     $tahun,
                     $saldoValue
                 ]);
+            }
             }
             DB::commit();
         } catch (\Exception $e) {
@@ -104,7 +106,7 @@ class KeuanganController extends Controller
 
         return redirect()
             ->route('keuangan.index', ['bulan' => $bulan, 'tahun' => $tahun])
-            ->with('success', 'Saldo awal berhasil disimpan.');
+            ->with('success', 'Saldo awal berhasil disimpan & Notifikasi Dikirim.');
     }
 
     public function storePemasukan(Request $request)

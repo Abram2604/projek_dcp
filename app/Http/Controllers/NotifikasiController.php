@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -12,17 +11,17 @@ class NotifikasiController extends Controller
     {
         $userId = Auth::id();
 
-        // Ambil semua notifikasi (Pagination 10 per halaman)
+        // 1. Ambil Notifikasi (Pagination 15 per halaman)
         $notifikasi = DB::table('Notifikasi')
                         ->where('id_anggota', $userId)
                         ->orderBy('dibuat_pada', 'desc')
-                        ->paginate(10);
+                        ->paginate(15);
 
-        // Tandai semua sebagai sudah dibaca saat membuka halaman ini
+        // 2. Tandai semua sebagai "Sudah Dibaca" saat halaman dibuka
         DB::table('Notifikasi')
             ->where('id_anggota', $userId)
             ->where('is_read', 0)
-            ->update(['is_read' => 1]);
+            ->update(['is_read' => 1, 'diupdate_pada' => now()]);
 
         return view('pages.notifikasi.index', compact('notifikasi'));
     }

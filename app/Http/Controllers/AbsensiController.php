@@ -75,6 +75,11 @@ class AbsensiController extends Controller
                     $now,
                     'INPUT_MANUAL' 
                 ]);
+                  DB::statement("CALL sp_notif_qr_harian(?, ?, ?)", [
+                    $user->id,
+                    $today, 
+                    'HADIR'
+                ]);
                 return redirect()->route('absensi.index', ['tab' => 'qr'])
                     ->with('success', 'Berhasil Absen Masuk pada ' . $now);
             } elseif ($type == 'pulang') {
@@ -143,6 +148,11 @@ class AbsensiController extends Controller
                     $today,
                     $now,
                     'QR_MESIN'
+                ]);
+                  DB::statement("CALL sp_notif_qr_harian(?, ?, ?)", [
+                    $anggota->id,
+                    Carbon::now(),
+                    'HADIR'
                 ]);
 
                 return response()->json([
@@ -219,6 +229,11 @@ class AbsensiController extends Controller
                 $keteranganLengkap,
                 $pathBukti
             ]);
+             DB::statement("CALL sp_notif_pengajuan_baru(?, ?, ?)", [
+                $user->id,
+                'DINAS_LUAR', 
+                Carbon::now()->toDateString()
+            ]);
 
             return redirect()->route('absensi.index', ['tab' => 'dinas'])
                 ->with('success', 'Laporan Dinas berhasil dikirim (Menunggu Approval).');
@@ -267,6 +282,11 @@ class AbsensiController extends Controller
                     $pathBukti
                 ]);
             }
+            DB::statement("CALL sp_notif_pengajuan_baru(?, ?, ?)", [
+                $user->id,
+                $status, 
+                $request->mulai_tanggal
+            ]);
 
             DB::commit();
             return redirect()->route('absensi.index', ['tab' => 'izin'])
@@ -359,11 +379,21 @@ class AbsensiController extends Controller
         $request->validate(['status' => 'required|in:APPROVED,REJECTED']);
 
         try {
+            $dataAbsen = DB::table('Riwayat_Absensi')->where('id', $id)->first();
             DB::statement('CALL sp_update_status_absensi(?, ?, ?)', [
                 $id,
                 $request->status,
                 Auth::id()
             ]);
+              if ($dataAbsen) {
+                $statusIndo = ($request->status == 'APPROVED') ? 'DISETUJUI' : 'DITOLAK';
+                
+                DB::statement("CALL sp_notif_hasil_approval(?, ?, ?)", [
+                    $dataAbsen->id_anggota,
+                    $statusIndo,
+                    $dataAbsen->tanggal
+                ]);
+            }
             $msg = $request->status == 'APPROVED' ? 'Data disetujui.' : 'Data ditolak.';
             return back()->with('success', $msg);
         } catch (\Exception $e) {
