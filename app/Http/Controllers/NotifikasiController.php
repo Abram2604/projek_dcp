@@ -16,17 +16,11 @@ class NotifikasiController extends Controller
                         ->where('id_anggota', $userId)
                         ->orderBy('dibuat_pada', 'desc')
                         ->paginate(15);
-
-        
-        /*DB::table('Notifikasi')
-            ->where('id_anggota', $userId)
-            ->where('is_read', 0)
-            ->update(['is_read' => 1, 'diupdate_pada' => now()]);
-            */
-
         return view('pages.notifikasi.index', compact('notifikasi'));
     }
-      public function markAsRead($id)
+    
+    // 2. Fungsi Tandai Satu Saja (Tombol Ceklis)
+    public function markAsRead($id)
     {
         $userId = Auth::id();
 
@@ -39,6 +33,7 @@ class NotifikasiController extends Controller
                 'diupdate_pada' => now()
             ]);
 
+        // Tetap di halaman notifikasi (Refresh halaman)
         return back()->with('success', 'Notifikasi ditandai sudah dibaca.');
     }
 
@@ -49,11 +44,8 @@ class NotifikasiController extends Controller
 
         DB::table('Notifikasi')
             ->where('id_anggota', $userId)
-            ->where('is_read', 0) 
-            ->update([
-                'is_read' => 1, 
-                'diupdate_pada' => now()
-            ]);
+            ->where('is_read', 0)
+            ->update(['is_read' => 1, 'diupdate_pada' => now()]);
 
         return back()->with('success', 'Semua notifikasi telah ditandai sudah dibaca.');
     }

@@ -34,6 +34,14 @@
             <span>Absensi</span>
         </a>
 
+        <!-- Terminal Scan (Hanya Ketua DPC & Sekretaris) -->
+        @if($jabatan === 'Ketua DPC' || $jabatan === 'Sekretaris')
+        <a href="{{ route('absensi.kiosk') }}" class="nav-item {{ request()->routeIs('absensi.kiosk') ? 'active' : '' }}">
+            <i class="fa-solid fa-qrcode"></i>
+            <span>Terminal Scan</span>
+        </a>
+        @endif
+
         <!-- Laporan Harian (FIXED: Menggunakan Route Name agar spesifik) -->
         <a href="{{ route('laporan.index') }}" class="nav-item {{ request()->routeIs('laporan.*') ? 'active' : '' }}">
             <i class="fa-regular fa-file-lines"></i>

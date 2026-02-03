@@ -15,6 +15,39 @@
     
     <!-- 3. CUSTOM CSS (dari folder public) -->
     <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+
+    <!-- [PERBAIKAN] CSS Tambahan untuk Modal & Layout -->
+    <style>
+        /* Pastikan Modal selalu di lapisan paling atas */
+        .modal-backdrop {
+            z-index: 1050 !important;
+        }
+        .modal {
+            z-index: 1060 !important;
+        }
+
+        /* Pastikan z-index sidebar di bawah modal backdrop */
+        .sidebar-wrapper {
+            z-index: 1040;
+        }
+        
+        /* 
+         * Atasi modal yang terlalu lebar dan menabrak sidebar di desktop.
+         * Kita beri sedikit margin kiri saat sidebar aktif.
+         * Nilai margin-left harus sama dengan lebar sidebar (default 280px)
+        */
+        @media (min-width: 992px) {
+            .modal-dialog.modal-xl,
+            .modal-dialog.modal-lg {
+                transition: margin-left 0.3s ease-in-out;
+            }
+
+            body:not(.sidebar-collapsed) .modal-dialog.modal-xl,
+            body:not(.sidebar-collapsed) .modal-dialog.modal-lg {
+                margin-left: 290px; /* Lebar sidebar + sedikit padding */
+            }
+        }
+    </style>
     
 </head>
 <body>

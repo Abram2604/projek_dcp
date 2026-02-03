@@ -1,283 +1,157 @@
 @php
-    // KITA HITUNG DULU TOTALNYA DI SINI (AGAR SAAT MODE BACA, ANGKA TOTAL MUNCUL BENAR TANPA JS)
-    $incCos = $data['incomeCos'] ?? [];
-    $incNon = $data['incomeNonCos'] ?? [];
-    $exp    = $data['expenses'] ?? [];
-
-    $totalCos = ($incCos['kiic']??0) + ($incCos['kim']??0) + ($incCos['kisc']??0) + ($incCos['luar']??0);
-    $totalNon = ($incNon['adminBank']??0) + ($incNon['donasi']??0);
-    $totalIncome = $totalCos + $totalNon;
-
-    $totalExpense = 
-        ($exp['operasional']??0) + ($exp['bidang1']??0) + ($exp['bidang2']??0) + 
-        ($exp['bidang3']??0) + ($exp['bidang4']??0) + ($exp['bidang5']??0) + 
-        ($exp['sekretariat']??0) + ($exp['insentif']??0);
-
-    $surplus = $totalIncome - $totalExpense;
+    $incCos = $data['incomeCos'];
+    $incNon = $data['incomeNonCos'];
+    $exp    = $data['expenses'];
+    $vols   = $data['volumes'];
+    
 @endphp
 
 <thead class="table-dark">
     <tr>
         <th width="5%" class="text-center">No</th>
         <th>Keterangan</th>
+        <th width="15%" class="text-center">Vol</th> 
         <th width="25%" class="text-center">Jumlah (Rp)</th>
     </tr>
 </thead>
 <tbody>
-    <!-- === BAGIAN 1: PEMASUKAN COS === -->
+    <!-- === 1. PEMASUKAN COS === -->
+    <tr><td colspan="4" class="fw-bold bg-light text-primary">PEMASUKAN COS</td></tr>
+    @foreach(['Zona KIIC'=>'kiic', 'Zona KIM'=>'kim', 'Zona KISC'=>'kisc', 'Zona Luar'=>'luar'] as $lbl => $k)
     <tr>
-        <td colspan="3" class="fw-bold bg-light text-primary">PEMASUKAN COS</td>
+        <td class="text-center">{{ $loop->iteration }}</td><td>{{ $lbl }}</td>
+        <td class="text-center"><input type="number" class="form-control form-control-sm text-center input-vol-inc" name="volumes[inc_{{$k}}]" value="{{ $vols['inc_'.$k]??0 }}" {{$readOnly?'readonly':''}}></td>
+        <td><input type="number" class="form-control form-control-sm text-end input-money calc-inc" name="incomeCos[{{$k}}]" value="{{ $incCos[$k]??0 }}" {{$readOnly?'readonly':''}}></td>
     </tr>
+    @endforeach
+    <tr class="fw-bold bg-light"><td colspan="3" class="text-end">Jumlah Pemasukan COS</td><td class="text-end"><span id="sum_inc_cos">0</span></td></tr>
+
+    <!-- === 2. PEMASUKAN NON COS === -->
+    <tr><td colspan="4" class="fw-bold bg-light text-primary">PEMASUKAN NON COS</td></tr>
+    @foreach(['Administrasi Bank'=>'adminBank', 'Dana Konsolidasi / Donasi'=>'donasi'] as $lbl => $k)
     <tr>
-        <td class="text-center">1</td>
-        <td>Zona KIIC</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($incCos['kiic'] ?? 0, 0, ',', '.') }}
-            @else
-                <input type="number" class="form-control form-control-sm text-end input-money calc-income" 
-                       name="incomeCos[kiic]" value="{{ $incCos['kiic'] ?? 0 }}">
-            @endif
-        </td>
+        <td class="text-center">{{ $loop->iteration }}</td><td>{{ $lbl }}</td>
+        <td class="text-center"><input type="number" class="form-control form-control-sm text-center input-vol-inc" name="volumes[inc_non_{{$k}}]" value="{{ $vols['inc_non_'.$k]??0 }}" {{$readOnly?'readonly':''}}></td>
+        <td><input type="number" class="form-control form-control-sm text-end input-money calc-inc" name="incomeNonCos[{{$k}}]" value="{{ $incNon[$k]??0 }}" {{$readOnly?'readonly':''}}></td>
     </tr>
-    <tr>
-        <td class="text-center">2</td>
-        <td>Zona KIM</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($incCos['kim'] ?? 0, 0, ',', '.') }}
-            @else
-                <input type="number" class="form-control form-control-sm text-end input-money calc-income" 
-                       name="incomeCos[kim]" value="{{ $incCos['kim'] ?? 0 }}">
-            @endif
-        </td>
-    </tr>
-    <tr>
-        <td class="text-center">3</td>
-        <td>Zona KISC</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($incCos['kisc'] ?? 0, 0, ',', '.') }}
-            @else
-                <input type="number" class="form-control form-control-sm text-end input-money calc-income" 
-                       name="incomeCos[kisc]" value="{{ $incCos['kisc'] ?? 0 }}">
-            @endif
-        </td>
-    </tr>
-    <tr>
-        <td class="text-center">4</td>
-        <td>Zona Luar</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($incCos['luar'] ?? 0, 0, ',', '.') }}
-            @else
-                <input type="number" class="form-control form-control-sm text-end input-money calc-income" 
-                       name="incomeCos[luar]" value="{{ $incCos['luar'] ?? 0 }}">
-            @endif
-        </td>
+    @endforeach
+    <tr class="fw-bold bg-light"><td colspan="3" class="text-end">Jumlah Pemasukan Non COS</td><td class="text-end"><span id="sum_inc_non">0</span></td></tr>
+
+    <!-- TOTAL PENDAPATAN -->
+    <tr class="fw-bold bg-success text-white">
+        <td colspan="3" class="text-end">TOTAL PENDAPATAN ORGANISASI</td>
+        <td class="text-end"><span id="total_income_display">0</span></td>
     </tr>
 
-    <!-- === BAGIAN 2: PEMASUKAN NON COS === -->
+    <!-- === 3. PENGELUARAN OPS === -->
+    <tr><td colspan="4" class="fw-bold bg-light text-danger">PENGELUARAN ( BEBAN ) ORGANISASI</td></tr>
+    <tr class="table-secondary"><td colspan="4" class="fw-bold ps-4">Operasional Organisasi</td></tr>
+    
+    @foreach([
+        'Ketua, Sekretaris, Bendahara' => 'ops_ketua',
+        'Bidang I Organisasi' => 'ops_bidang1',
+        'Bidang II Advokasi' => 'ops_bidang2',
+        'Bidang III Pengembangan SDM' => 'ops_bidang3',
+        'Bidang IV Kesejahteraan' => 'ops_bidang4',
+        'Bidang V Publikasi & Hubungan Antar Lembaga' => 'ops_bidang5'
+    ] as $lbl => $k)
     <tr>
-        <td colspan="3" class="fw-bold bg-light text-primary">PEMASUKAN NON COS</td>
+        <td></td><td>{{ $lbl }}</td>
+        <td class="text-center"><input type="number" class="form-control form-control-sm text-center input-vol-exp" name="volumes[v_{{$k}}]" value="{{ $vols['v_'.$k]??0 }}" {{$readOnly?'readonly':''}}></td>
+        <td><input type="number" class="form-control form-control-sm text-end input-money calc-exp calc-ops" name="expenses[{{$k}}]" value="{{ $exp[$k]??0 }}" {{$readOnly?'readonly':''}}></td>
     </tr>
-    <tr>
-        <td class="text-center">1</td>
-        <td>Administrasi Bank</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($incNon['adminBank'] ?? 0, 0, ',', '.') }}
-            @else
-                <input type="number" class="form-control form-control-sm text-end input-money calc-income" 
-                       name="incomeNonCos[adminBank]" value="{{ $incNon['adminBank'] ?? 0 }}">
-            @endif
-        </td>
-    </tr>
-    <tr>
-        <td class="text-center">2</td>
-        <td>Dana Konsolidasi / Donasi</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($incNon['donasi'] ?? 0, 0, ',', '.') }}
-            @else
-                <input type="number" class="form-control form-control-sm text-end input-money calc-income" 
-                       name="incomeNonCos[donasi]" value="{{ $incNon['donasi'] ?? 0 }}">
-            @endif
-        </td>
-    </tr>
+    @endforeach
+    <tr class="fw-bold bg-light"><td colspan="3" class="text-end">Jumlah Operasional</td><td class="text-end"><span id="sum_ops">0</span></td></tr>
 
-    <!-- TOTAL PEMASUKAN -->
-    <tr class="fw-bold" style="background-color: #d1fae5;">
-        <td colspan="2" class="text-end text-success">TOTAL PENDAPATAN</td>
-        <td class="text-end">
-            @if($readOnly)
-                <span class="text-success">{{ number_format($totalIncome, 0, ',', '.') }}</span>
-            @else
-                <input type="number" id="totalIncomeDisplay" class="form-control form-control-sm text-end fw-bold text-success" 
-                       readonly value="{{ $totalIncome }}">
-            @endif
-        </td>
+    <!-- === 4. PENGELUARAN EVENT (BARU) === -->
+    <tr class="table-secondary"><td colspan="4" class="fw-bold ps-4">Event Organisasi</td></tr>
+    @foreach([
+        'Ketua, Sekretaris, Bendahara' => 'evt_ketua',
+        'Bidang I Organisasi' => 'evt_bidang1',
+        'Bidang II Advokasi' => 'evt_bidang2',
+        'Bidang III Pengembangan SDM' => 'evt_bidang3',
+        'Bidang IV Kesejahteraan' => 'evt_bidang4',
+        'Bidang V Publikasi & Hubungan Antar Lembaga' => 'evt_bidang5'
+    ] as $lbl => $k)
+    <tr>
+        <td></td><td>{{ $lbl }}</td>
+        <td class="text-center"><input type="number" class="form-control form-control-sm text-center input-vol-exp" name="volumes[v_{{$k}}]" value="{{ $vols['v_'.$k]??0 }}" {{$readOnly?'readonly':''}}></td>
+        <td><input type="number" class="form-control form-control-sm text-end input-money calc-exp calc-evt" name="expenses[{{$k}}]" value="{{ $exp[$k]??0 }}" {{$readOnly?'readonly':''}}></td>
     </tr>
+    @endforeach
+    <tr class="fw-bold bg-light"><td colspan="3" class="text-end">Jumlah Event</td><td class="text-end"><span id="sum_evt">0</span></td></tr>
 
-    <!-- SPACER -->
-    <tr><td colspan="3" class="border-0 bg-white"></td></tr>
-
-    <!-- === BAGIAN 3: PENGELUARAN === -->
+    <!-- === 5. LAINNYA === -->
     <tr>
-        <td colspan="3" class="fw-bold bg-light text-danger">PENGELUARAN ORGANISASI</td>
+        <td></td><td>Kesekretariatan</td>
+        <td class="text-center"><input type="number" class="form-control form-control-sm text-center input-vol-exp" name="volumes[v_sekretariat]" value="{{ $vols['v_sekretariat']??0 }}" {{$readOnly?'readonly':''}}></td>
+        <td><input type="number" class="form-control form-control-sm text-end input-money calc-exp" name="expenses[sekretariat]" value="{{ $exp['sekretariat']??0 }}" {{$readOnly?'readonly':''}}></td>
     </tr>
     <tr>
-        <td class="text-center">1</td>
-        <td>Beban Operasional BPH</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($exp['operasional'] ?? 0, 0, ',', '.') }}
-            @else
-                <input type="number" class="form-control form-control-sm text-end input-money calc-expense" 
-                       name="expenses[operasional]" value="{{ $exp['operasional'] ?? 0 }}">
-            @endif
-        </td>
-    </tr>
-    <tr>
-        <td class="text-center">2</td>
-        <td>Bidang I (Organisasi)</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($exp['bidang1'] ?? 0, 0, ',', '.') }}
-            @else
-                <input type="number" class="form-control form-control-sm text-end input-money calc-expense" 
-                       name="expenses[bidang1]" value="{{ $exp['bidang1'] ?? 0 }}">
-            @endif
-        </td>
-    </tr>
-    <tr>
-        <td class="text-center">3</td>
-        <td>Bidang II (Advokasi)</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($exp['bidang2'] ?? 0, 0, ',', '.') }}
-            @else
-                <input type="number" class="form-control form-control-sm text-end input-money calc-expense" 
-                       name="expenses[bidang2]" value="{{ $exp['bidang2'] ?? 0 }}">
-            @endif
-        </td>
-    </tr>
-    <tr>
-        <td class="text-center">4</td>
-        <td>Bidang III (PSDM)</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($exp['bidang3'] ?? 0, 0, ',', '.') }}
-            @else
-                <input type="number" class="form-control form-control-sm text-end input-money calc-expense" 
-                       name="expenses[bidang3]" value="{{ $exp['bidang3'] ?? 0 }}">
-            @endif
-        </td>
-    </tr>
-    <tr>
-        <td class="text-center">5</td>
-        <td>Bidang IV (Kesejahteraan)</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($exp['bidang4'] ?? 0, 0, ',', '.') }}
-            @else
-                <input type="number" class="form-control form-control-sm text-end input-money calc-expense" 
-                       name="expenses[bidang4]" value="{{ $exp['bidang4'] ?? 0 }}">
-            @endif
-        </td>
-    </tr>
-    <tr>
-        <td class="text-center">6</td>
-        <td>Bidang V (Publikasi)</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($exp['bidang5'] ?? 0, 0, ',', '.') }}
-            @else
-                <input type="number" class="form-control form-control-sm text-end input-money calc-expense" 
-                       name="expenses[bidang5]" value="{{ $exp['bidang5'] ?? 0 }}">
-            @endif
-        </td>
-    </tr>
-    <tr>
-        <td class="text-center">7</td>
-        <td>Kesekretariatan</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($exp['sekretariat'] ?? 0, 0, ',', '.') }}
-            @else
-                <input type="number" class="form-control form-control-sm text-end input-money calc-expense" 
-                       name="expenses[sekretariat]" value="{{ $exp['sekretariat'] ?? 0 }}">
-            @endif
-        </td>
-    </tr>
-    <tr>
-        <td class="text-center">8</td>
-        <td>Setoran Perangkat & Insentif</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($exp['insentif'] ?? 0, 0, ',', '.') }}
-            @else
-                <input type="number" class="form-control form-control-sm text-end input-money calc-expense" 
-                       name="expenses[insentif]" value="{{ $exp['insentif'] ?? 0 }}">
-            @endif
-        </td>
+        <td></td><td>Setoran Perangkat & Insentif Pengurus</td>
+        <td class="text-center"><input type="number" class="form-control form-control-sm text-center input-vol-exp" name="volumes[v_insentif]" value="{{ $vols['v_insentif']??0 }}" {{$readOnly?'readonly':''}}></td>
+        <td><input type="number" class="form-control form-control-sm text-end input-money calc-exp" name="expenses[insentif]" value="{{ $exp['insentif']??0 }}" {{$readOnly?'readonly':''}}></td>
     </tr>
 
     <!-- TOTAL PENGELUARAN -->
-    <tr class="fw-bold" style="background-color: #fee2e2;">
-        <td colspan="2" class="text-end text-danger">TOTAL PENGELUARAN</td>
-        <td class="text-end">
-            @if($readOnly)
-                <span class="text-danger">{{ number_format($totalExpense, 0, ',', '.') }}</span>
-            @else
-                <input type="number" id="totalExpenseDisplay" class="form-control form-control-sm text-end fw-bold text-danger" 
-                       readonly value="{{ $totalExpense }}">
-            @endif
-        </td>
+    <tr class="fw-bold bg-danger text-white">
+        <td colspan="3" class="text-end">TOTAL PENGELUARAN ORGANISASI</td>
+        <td class="text-end"><span id="total_expense_display">0</span></td>
     </tr>
 
-    <!-- HASIL AKHIR -->
-    <tr><td colspan="3" class="border-0 bg-white"></td></tr>
-    
-    <tr class="fw-bold bg-warning bg-opacity-25">
-        <td colspan="2" class="text-end">SURPLUS / MINUS</td>
-        <td class="text-end">
-            @if($readOnly)
-                {{ number_format($surplus, 0, ',', '.') }}
-            @else
-                <input type="number" id="surplusDisplay" class="form-control form-control-sm text-end fw-bold" 
-                       readonly value="{{ $surplus }}">
-            @endif
-        </td>
+    <!-- SURPLUS/MINUS -->
+    <tr class="fw-bold bg-warning text-dark">
+        <td colspan="3" class="text-end">SURPLUS / MINUS</td>
+        <td class="text-end"><span id="surplus_display">0</span></td>
     </tr>
 </tbody>
 
-<!-- Kalkulasi JS (Hanya Load Jika Bukan ReadOnly) -->
+{{-- JAVASCRIPT LOGIKA HITUNG (HANYA MUNCUL DI MODE EDIT) --}}
 @if(!$readOnly)
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        const inputs = document.querySelectorAll('.input-money');
-        function calculate() {
+        const moneyInputs = document.querySelectorAll('.input-money');
+        const volIncInputs = document.querySelectorAll('.input-vol-income');
+        const volExpInputs = document.querySelectorAll('.input-vol-expense');
+        
+        function calculateGrandTotals() {
             let totalIncome = 0;
             let totalExpense = 0;
+            let totalVolIncome = 0;
+            let totalVolExpense = 0;
+
+            // 1. Hitung Uang
             document.querySelectorAll('.calc-income').forEach(el => totalIncome += parseFloat(el.value || 0));
             document.querySelectorAll('.calc-expense').forEach(el => totalExpense += parseFloat(el.value || 0));
+
+            // 2. Hitung Volume Income
+            volIncInputs.forEach(el => totalVolIncome += parseFloat(el.value || 0));
+
+            // 3. Hitung Volume Expense
+            volExpInputs.forEach(el => totalVolExpense += parseFloat(el.value || 0));
             
-            // Set Value ke Input Readonly
+            // Update Tampilan Total Bawah
             const elInc = document.getElementById('totalIncomeDisplay');
             const elExp = document.getElementById('totalExpenseDisplay');
             const elSur = document.getElementById('surplusDisplay');
+            const elVolInc = document.getElementById('totalVolIncomeDisplay');
+            const elVolExp = document.getElementById('totalVolExpenseDisplay');
 
             if(elInc) elInc.value = totalIncome;
             if(elExp) elExp.value = totalExpense;
             if(elSur) elSur.value = totalIncome - totalExpense;
+            
+            if(elVolInc) elVolInc.value = totalVolIncome;
+            if(elVolExp) elVolExp.value = totalVolExpense;
         }
         
-        // Pasang Event Listener ke Input
-        inputs.forEach(input => input.addEventListener('input', calculate));
+        // Pasang listener
+        moneyInputs.forEach(input => input.addEventListener('input', calculateGrandTotals));
+        volIncInputs.forEach(input => input.addEventListener('input', calculateGrandTotals));
+        volExpInputs.forEach(input => input.addEventListener('input', calculateGrandTotals));
         
-        // Hitung pertama kali saat modal dibuka
-        calculate(); 
+        // Hitung awal
+        calculateGrandTotals(); 
     });
 </script>
 @endif

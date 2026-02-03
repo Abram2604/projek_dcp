@@ -4,81 +4,44 @@
 @section('header_subtitle', 'Riwayat aktivitas dan pemberitahuan Anda.')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row justify-content-center">
-        <div class="col-md-9">
-
-            {{-- 1. Header & Tombol Baca Semua --}}
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h4 class="fw-bold m-0 text-dark">Daftar Notifikasi</h4>
-                    <small class="text-muted">Kelola semua pemberitahuan masuk.</small>
-                </div>
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-0">
                 
-                {{-- Tombol Baca Semua --}}
-                @if($notifikasi->where('is_read', 0)->count() > 0)
-                    <a href="{{ route('notifikasi.readAll') }}" class="btn btn-white shadow-sm border text-primary fw-bold btn-sm px-3 rounded-pill">
-                        <i class="fa-solid fa-check-double me-2"></i>Tandai Semua Dibaca
-                    </a>
-                @endif
-            </div>
-
-            {{-- Alert Pesan Sukses --}}
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
-                    <i class="fa-solid fa-circle-check me-2"></i> {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
-
-            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-                <div class="card-body p-0">
-                    
-                    @if($notifikasi->count() > 0)
-                        <div class="list-group list-group-flush">
-                            @foreach($notifikasi as $notif)
-                            
-                            {{-- Container Utama (DIV, bukan A) --}}
-                            <div class="list-group-item p-4 border-bottom d-flex justify-content-between align-items-center {{ $notif->is_read == 0 ? 'bg-primary-subtle bg-opacity-10' : 'bg-white' }}">
-                                
-                                {{-- BAGIAN KIRI: Ikon & Teks (Klik teks untuk menuju link) --}}
-                                <div class="d-flex align-items-start gap-3 flex-grow-1">
-                                    
-                                    {{-- Ikon --}}
-                                    <div class="mt-1 flex-shrink-0">
-                                        @if($notif->tipe == 'success')
-                                            <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                                                <i class="fa-solid fa-check fa-lg"></i>
-                                            </div>
-                                        @elseif($notif->tipe == 'alert')
-                                            <div class="bg-danger-subtle text-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                                                <i class="fa-solid fa-bell fa-lg"></i>
-                                            </div>
-                                        @elseif($notif->tipe == 'warning')
-                                            <div class="bg-warning-subtle text-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                                                <i class="fa-solid fa-triangle-exclamation fa-lg"></i>
-                                            </div>
-                                        @else
-                                            <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                                                <i class="fa-solid fa-info fa-lg"></i>
-                                            </div>
-                                        @endif
-                                    </div>
-
-                                    {{-- Konten Teks --}}
-                                    <div class="text-decoration-none flex-grow-1">
-                                        <div class="d-flex flex-column">
-                                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <h6 class="mb-0 {{ $notif->is_read == 0 ? 'fw-bold text-dark' : 'text-secondary' }}">
-                                                    {{ $notif->judul }}
-                                                </h6>
-                                            </div>
-                                            <p class="mb-1 small text-muted lh-sm" style="max-width: 90%;">{{ $notif->pesan }}</p>
-                                            <small class="text-xs text-muted">
-                                                <i class="fa-regular fa-clock me-1"></i>
-                                                {{ \Carbon\Carbon::parse($notif->dibuat_pada)->locale('id')->diffForHumans() }}
-                                            </small>
+                @if($notifikasi->count() > 0)
+                    <div class="list-group list-group-flush rounded-4">
+                        @foreach($notifikasi as $notif)
+                        <a href="{{ $notif->link_url ?? '#' }}" class="list-group-item list-group-item-action p-4 border-bottom {{ $notif->is_read == 0 ? 'bg-indigo-50' : '' }}">
+                            <div class="d-flex align-items-start gap-3">
+                                {{-- Ikon --}}
+                                <div class="mt-1 flex-shrink-0">
+                                    @if($notif->tipe == 'success')
+                                        <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fa-solid fa-check"></i>
                                         </div>
+                                    @elseif($notif->tipe == 'alert')
+                                        <div class="bg-danger-subtle text-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fa-solid fa-bell"></i>
+                                        </div>
+                                    @elseif($notif->tipe == 'warning')
+                                        <div class="bg-warning-subtle text-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fa-solid fa-triangle-exclamation"></i>
+                                        </div>
+                                    @else
+                                        <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fa-solid fa-info"></i>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                {{-- Konten --}}
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <h6 class="mb-0 fw-bold text-dark">{{ $notif->judul }}</h6>
+                                        <small class="text-muted" style="font-size: 0.75rem;">
+                                            {{ \Carbon\Carbon::parse($notif->dibuat_pada)->isoFormat('D MMMM Y, HH:mm') }}
+                                        </small>
                                     </div>
                                 </div>
 

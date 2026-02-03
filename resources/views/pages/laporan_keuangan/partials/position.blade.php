@@ -1,12 +1,5 @@
-{{-- 
-    MAPPING SESUAI PDF PAGE 2:
-    1. ASET / DANA (UANG)
-    2. PENGELUARAN DAN MODAL
---}}
-
-<thead>
-    <!-- BAGIAN ASET -->
-    <tr class="table-dark">
+<thead class="table-dark">
+    <tr>
         <th colspan="2" class="text-start ps-3">ASET</th>
     </tr>
 </thead>
@@ -15,131 +8,224 @@
         <td colspan="2" class="text-decoration-underline">DANA ( UANG )</td>
     </tr>
     
-    <!-- Rincian Aset -->
+    @php
+    $assetItems = [
+        'Rekening BNI a.n. DPC FSP LEM SPSI Kab. Karawang' => 'bni',
+        'Kas' => 'kas',
+        'Advance Kesekretariatan' => 'advSekretariat',
+        'Advance Operasional BPH & Bidang' => 'advBph',
+        'Advance Proposal' => 'advProposal'
+    ];
+    @endphp
+    
+    @foreach($assetItems as $label => $key)
     <tr>
-        <td width="70%">Rekening BNI an DPC FSP LEM SPSI Kab Karawang</td>
+        <td width="70%">{{ $label }}</td>
         <td width="30%">
-            <input type="number" class="form-control form-control-sm text-end input-money calc-asset" 
-                   name="assets[bni]" value="{{ $data['assets']['bni'] ?? 0 }}">
+            @if($readOnly)
+                <div class="text-end fw-bold">{{ number_format($data['assets'][$key] ?? 0, 0, ',', '.') }}</div>
+            @else
+                <input type="number" 
+                       class="form-control form-control-sm text-end input-money calc-pos-asset" 
+                       name="assets[{{ $key }}]" 
+                       value="{{ $data['assets'][$key] ?? 0 }}"
+                       min="0">
+            @endif
         </td>
     </tr>
-    <tr>
-        <td>Kas</td>
-        <td>
-            <input type="number" class="form-control form-control-sm text-end input-money calc-asset" 
-                   name="assets[kas]" value="{{ $data['assets']['kas'] ?? 0 }}">
-        </td>
-    </tr>
-    <tr>
-        <td>Advance Kesekretariatan</td>
-        <td>
-            <input type="number" class="form-control form-control-sm text-end input-money calc-asset" 
-                   name="assets[advSekretariat]" value="{{ $data['assets']['advSekretariat'] ?? 0 }}">
-        </td>
-    </tr>
-    <tr>
-        <td>Advance Operasional BPH & Bidang</td>
-        <td>
-            <input type="number" class="form-control form-control-sm text-end input-money calc-asset" 
-                   name="assets[advBph]" value="{{ $data['assets']['advBph'] ?? 0 }}">
-        </td>
-    </tr>
-    <tr>
-        <td>Advance Proposal / Lainnya</td>
-        <td>
-            <input type="number" class="form-control form-control-sm text-end input-money calc-asset" 
-                   name="assets[advLain]" value="{{ $data['assets']['advLain'] ?? 0 }}">
-        </td>
-    </tr>
+    @endforeach
 
-    <!-- TOTAL BALANCE -->
-    <tr class="fw-bold" style="background-color: #d1fae5;">
-        <td class="text-center text-uppercase">Balance (Total Aset)</td>
-        <td>
-            <input type="number" id="totalAssetDisplay" class="form-control form-control-sm text-end fw-bold bg-transparent border-0" readonly value="0">
+    <tr class="fw-bold bg-success text-white">
+        <td class="text-center">BALANCE (TOTAL ASET)</td>
+        <td class="text-end">
+            @if($readOnly)
+                <span class="fw-bold">{{ number_format($data['total_aset'] ?? 0, 0, ',', '.') }}</span>
+            @else
+                <span id="total_asset_display" class="fw-bold">0</span>
+            @endif
         </td>
     </tr>
 </tbody>
 
 <!-- SPACER -->
-<tbody><tr><td colspan="2" class="border-0 p-3"></td></tr></tbody>
+<tbody>
+    <tr>
+        <td colspan="2" class="border-0 p-3"></td>
+    </tr>
+</tbody>
 
-<thead>
-    <!-- BAGIAN KEWAJIBAN & MODAL -->
-    <tr class="table-dark">
+<thead class="table-dark">
+    <tr>
         <th colspan="2" class="text-start ps-3">PENGELUARAN DAN MODAL</th>
     </tr>
 </thead>
 <tbody>
-    
-    <!-- PENGELUARAN (Diambil Otomatis/Manual dari Flow) -->
+    <!-- PENGELUARAN SECTION -->
     <tr class="fw-bold bg-light">
         <td colspan="2" class="text-decoration-underline">PENGELUARAN</td>
     </tr>
+    
+    @php
+    $expenseItems = [
+        'Operasional Organisasi' => 'pos_ops',
+        'Event Organisasi' => 'pos_evt',
+        'Kesekretariatan' => 'pos_sekretariat',
+        'Setoran Perangkat & Insentif Pengurus' => 'pos_insentif'
+    ];
+    @endphp
+    
+    @foreach($expenseItems as $label => $key)
     <tr>
-        <td>Jumlah Pengeluaran (Total Beban Organisasi)</td>
+        <td>{{ $label }}</td>
         <td>
-            <!-- Value ini idealnya ambil dari total Expenses, tapi kita buat input agar user bisa koreksi jika perlu -->
-            @php 
-                $totalExp = array_sum($data['expenses'] ?? []);
-            @endphp
-            <input type="number" class="form-control form-control-sm text-end input-money calc-liability" 
-                   id="inputTotalExpense" value="{{ $totalExp }}" readonly style="background-color: #f0f0f0;">
-            <small class="text-muted fst-italic">*Otomatis dari Laporan Dana Keluar</small>
+            @if($readOnly)
+                <div class="text-end text-danger fw-bold">{{ number_format($data['liabilities'][$key] ?? 0, 0, ',', '.') }}</div>
+            @else
+                <input type="number" 
+                       class="form-control form-control-sm text-end input-money calc-pos-expense" 
+                       name="liabilities[{{ $key }}]" 
+                       value="{{ $data['liabilities'][$key] ?? 0 }}"
+                       min="0">
+            @endif
+        </td>
+    </tr>
+    @endforeach
+    
+    <tr class="fw-bold bg-light">
+        <td class="text-end">Jumlah Pengeluaran</td>
+        <td class="text-end">
+            @if($readOnly)
+                <span class="text-danger fw-bold">{{ number_format($data['total_pengeluaran'] ?? 0, 0, ',', '.') }}</span>
+            @else
+                <span id="sum_pos_exp" class="text-danger fw-bold">0</span>
+            @endif
         </td>
     </tr>
 
-    <!-- MODAL -->
+    <!-- MODAL SECTION -->
     <tr class="fw-bold bg-light">
         <td colspan="2" class="text-decoration-underline">MODAL</td>
     </tr>
+    
+    @php
+    $modalItems = [
+        'Simpanan / Saldo Awal' => 'pos_saldo_awal',
+        'Pemasukan COS' => 'pos_inc_cos',
+        'Pemasukan Non COS' => 'pos_inc_non_cos'
+    ];
+    @endphp
+    
+    @foreach($modalItems as $label => $key)
     <tr>
-        <td>Simpanan / Saldo Awal</td>
+        <td>{{ $label }}</td>
         <td>
-            <input type="number" class="form-control form-control-sm text-end input-money calc-liability" 
-                   name="saldoAwal" value="{{ $data['saldoAwal'] ?? 0 }}">
+            @if($readOnly)
+                <div class="text-end text-success fw-bold">{{ number_format($data['liabilities'][$key] ?? 0, 0, ',', '.') }}</div>
+            @else
+                <input type="number" 
+                       class="form-control form-control-sm text-end input-money calc-pos-modal" 
+                       name="liabilities[{{ $key }}]" 
+                       value="{{ $data['liabilities'][$key] ?? 0 }}"
+                       min="0">
+            @endif
         </td>
     </tr>
-    <tr>
-        <td>Pemasukan (COS & Non COS)</td>
-        <td>
-            @php 
-                $totalInc = array_sum($data['incomeCos'] ?? []) + array_sum($data['incomeNonCos'] ?? []);
-            @endphp
-            <input type="number" class="form-control form-control-sm text-end input-money calc-liability" 
-                   id="inputTotalIncome" value="{{ $totalInc }}" readonly style="background-color: #f0f0f0;">
-            <small class="text-muted fst-italic">*Otomatis dari Laporan Dana Masuk</small>
+    @endforeach
+    
+    <tr class="fw-bold bg-light">
+        <td class="text-end">Jumlah Modal</td>
+        <td class="text-end">
+            @if($readOnly)
+                <span class="text-success fw-bold">{{ number_format($data['total_modal'] ?? 0, 0, ',', '.') }}</span>
+            @else
+                <span id="sum_pos_modal" class="text-success fw-bold">0</span>
+            @endif
         </td>
     </tr>
 
-    <!-- TOTAL SALDO MODAL -->
-    <tr class="fw-bold" style="background-color: #d1fae5;">
-        <td class="text-center text-uppercase">Saldo Modal (Total Pasiva)</td>
-        <td>
-            <input type="number" id="totalLiabilityDisplay" class="form-control form-control-sm text-end fw-bold bg-transparent border-0" readonly value="0">
+    <tr class="fw-bold bg-danger text-white">
+        <td class="text-center">SALDO MODAL (BALANCE)</td>
+        <td class="text-end">
+            @if($readOnly)
+                <span class="fw-bold">{{ number_format($data['saldo_modal'] ?? 0, 0, ',', '.') }}</span>
+            @else
+                <span id="total_liability_display" class="fw-bold">0</span>
+            @endif
         </td>
     </tr>
 </tbody>
 
+{{-- JAVASCRIPT UNTUK PERHITUNGAN OTOMATIS (HANYA MODE EDIT) --}}
+@if(!$readOnly)
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        function calculatePosition() {
-            let totalAsset = 0;
-            document.querySelectorAll('.calc-asset').forEach(el => totalAsset += parseFloat(el.value || 0));
-            document.getElementById('totalAssetDisplay').value = totalAsset;
-            
-            let expense = parseFloat(document.getElementById('inputTotalExpense').value || 0);
-            let saldoAwal = parseFloat(document.querySelector('input[name="saldoAwal"]').value || 0);
-            let income = parseFloat(document.getElementById('inputTotalIncome').value || 0);
-            let totalPasiva = (saldoAwal + income) - expense; // Ini rumus saldo akhir sebenarnya
-            document.getElementById('totalLiabilityDisplay').value = totalPasiva; 
-        }
+document.addEventListener("DOMContentLoaded", function() {
+    // Helper: Format angka ke Rupiah tanpa simbol
+    const formatRupiah = (num) => {
+        return new Intl.NumberFormat('id-ID').format(Math.round(num));
+    };
 
-        // Trigger saat input berubah
-        document.querySelectorAll('.input-money').forEach(input => {
-            input.addEventListener('input', calculatePosition);
+    // Ambil semua elemen kalkulasi
+    const assetInputs = document.querySelectorAll('.calc-pos-asset');
+    const expenseInputs = document.querySelectorAll('.calc-pos-expense');
+    const modalInputs = document.querySelectorAll('.calc-pos-modal');
+    
+    const totalAssetDisplay = document.getElementById('total_asset_display');
+    const sumExpenseDisplay = document.getElementById('sum_pos_exp');
+    const sumModalDisplay = document.getElementById('sum_pos_modal');
+    const saldoModalDisplay = document.getElementById('total_liability_display');
+
+    // Fungsi kalkulasi semua total
+    const calculateTotals = () => {
+        // Hitung Total Aset
+        let totalAsset = 0;
+        assetInputs.forEach(input => {
+            totalAsset += parseFloat(input.value) || 0;
         });
+        totalAssetDisplay.textContent = formatRupiah(totalAsset);
         
-        calculatePosition();
+        // Hitung Total Pengeluaran
+        let totalExpense = 0;
+        expenseInputs.forEach(input => {
+            totalExpense += parseFloat(input.value) || 0;
+        });
+        sumExpenseDisplay.textContent = formatRupiah(totalExpense);
+        
+        // Hitung Total Modal
+        let totalModal = 0;
+        modalInputs.forEach(input => {
+            totalModal += parseFloat(input.value) || 0;
+        });
+        sumModalDisplay.textContent = formatRupiah(totalModal);
+        
+        // Hitung Saldo Modal (Modal - Pengeluaran)
+        const saldoModal = totalModal - totalExpense;
+        saldoModalDisplay.textContent = formatRupiah(saldoModal);
+        
+        // Update warna berdasarkan nilai saldo
+        if (saldoModalDisplay) {
+            saldoModalDisplay.className = saldoModal >= 0 
+                ? 'fw-bold text-white' 
+                : 'fw-bold text-warning';
+        }
+    };
+
+    // Pasang event listener ke semua input
+    [...assetInputs, ...expenseInputs, ...modalInputs].forEach(input => {
+        input.addEventListener('input', calculateTotals);
+        input.addEventListener('change', calculateTotals); // Handle paste
     });
+
+    // Hitung awal saat halaman dimuat
+    calculateTotals();
+    
+    // Auto-format input saat blur (opsional)
+    [...assetInputs, ...expenseInputs, ...modalInputs].forEach(input => {
+        input.addEventListener('blur', function() {
+            if (this.value && !isNaN(this.value)) {
+                this.value = parseFloat(this.value).toFixed(0);
+            }
+        });
+    });
+});
 </script>
+@endif
