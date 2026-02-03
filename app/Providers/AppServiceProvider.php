@@ -24,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+   public function boot(): void
     {
         Paginator::useBootstrapFive();
         View::composer('*', function ($view) {
@@ -33,16 +33,22 @@ class AppServiceProvider extends ServiceProvider
                 $userId = Auth::id();
 
                 try {
-                    $notif = DB::select("CALL sp_notifikasi_list(?, ?)", [$userId, 5]);
+                    $notif = DB::table('Notifikasi')
+                                ->where('id_anggota', $userId)
+                                ->where('is_read', 0) 
+                                ->orderBy('dibuat_pada', 'desc')
+                                ->limit(5)
+                                ->get();
                     $unread = DB::table('Notifikasi')
                                 ->where('id_anggota', $userId)
                                 ->where('is_read', 0)
                                 ->count();
+
                     $view->with('navbar_notif', $notif);
                     $view->with('navbar_unread', $unread);
 
                 } catch (\Exception $e) {
-                    $view->with('navbar_notif', []);
+                    $view->with('navbar_notif', collect([])); 
                     $view->with('navbar_unread', 0);
                 }
             }

@@ -25,6 +25,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/notifikasi', [NotifikasiController::class, 'index'])->name('notifikasi.index');
+    Route::get('/notifikasi/baca/{id}', [NotifikasiController::class, 'markAsRead'])->name('notifikasi.read');
+    Route::get('/notifikasi/baca-semua', [NotifikasiController::class, 'markAllRead'])->name('notifikasi.readAll');
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
 
     Route::get('/absensi', [AbsensiController::class, 'index'])->name('absensi.index');

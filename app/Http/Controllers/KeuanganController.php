@@ -86,14 +86,14 @@ class KeuanganController extends Controller
                     $saldoValue,
                     $userId,
                 ]);
-                 if ($saldoValue > 0) {
-                DB::statement('CALL sp_notif_saldo_divisi(?, ?, ?, ?)', [
-                    (int) $divisiId,
-                    $bulan,
-                    $tahun,
-                    $saldoValue
-                ]);
-            }
+                if ($saldoValue > 0) {
+                    DB::statement('CALL sp_notif_saldo_divisi(?, ?, ?, ?)', [
+                        (int) $divisiId,
+                        $bulan,
+                        $tahun,
+                        $saldoValue
+                    ]);
+                }
             }
             DB::commit();
         } catch (\Exception $e) {
@@ -136,10 +136,44 @@ class KeuanganController extends Controller
             $buktiUrl = Storage::url($buktiPath);
         }
 
+        // 1. Cek apakah periode keuangan sudah ada
         $periodeRows = DB::select('CALL sp_periode_keuangan_get(?, ?)', [$idDivisi, $tanggal]);
+
+        // 2. [PERBAIKAN] Jika periode belum ada, BUAT SECARA OTOMATIS (Auto-Create)
         if (count($periodeRows) === 0) {
+            $dateObj = Carbon::parse($tanggal);
+            
+            try {
+                // Panggil SP untuk inisialisasi periode baru dengan saldo awal 0
+                // Parameter: id_divisi, bulan, tahun, saldo_awal, id_penanggung_jawab
+                DB::statement('CALL sp_keuangan_set_saldo_awal(?, ?, ?, ?, ?)', [
+                    $idDivisi,
+                    $dateObj->month,
+                    $dateObj->year,
+                    0, // Saldo awal 0, karena ini inisialisasi otomatis via pemasukan
+                    Auth::id(),
+                ]);
+
+                // Panggil ulang get untuk mendapatkan ID periode yang baru saja dibuat
+                $periodeRows = DB::select('CALL sp_periode_keuangan_get(?, ?)', [$idDivisi, $tanggal]);
+            } catch (\Exception $e) {
+                // Jika gagal buat periode (opsional: hapus file bukti jika perlu)
+                if ($buktiPath) {
+                    Storage::disk('public')->delete($buktiPath);
+                }
+                return back()
+                    ->withErrors(['pemasukan' => 'Gagal membuat periode keuangan otomatis: ' . $e->getMessage()])
+                    ->withInput();
+            }
+        }
+
+        // Validasi double check (seharusnya tidak terjadi jika auto-create sukses)
+        if (count($periodeRows) === 0) {
+            if ($buktiPath) {
+                Storage::disk('public')->delete($buktiPath);
+            }
             return back()
-                ->withErrors(['pemasukan' => 'Periode keuangan belum tersedia untuk bulan transaksi.'])
+                ->withErrors(['pemasukan' => 'Periode keuangan tidak dapat ditemukan atau dibuat.'])
                 ->withInput();
         }
 

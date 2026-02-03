@@ -136,13 +136,14 @@
             </table>
         </div>
         <div class="mt-4 my-pagination">
-    {{ $users->withQueryString()->links('pagination::bootstrap-5') }}
-</div>
+            {{ $users->withQueryString()->links('pagination::bootstrap-5') }}
+        </div>
     </div>
 </div>
 
 <!-- ================= MODALS ================= -->
 
+<!-- 1. Modal Tambah Anggota -->
 <div class="modal fade" id="modalCreate" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content rounded-4 border-0">
@@ -154,32 +155,71 @@
                 @csrf
                 <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-6"><label class="small fw-bold text-muted">Nama Lengkap</label><input type="text" name="nama_lengkap" class="form-control" required></div>
-                        <div class="col-6"><label class="small fw-bold text-muted">Username</label><input type="text" name="username" class="form-control" required></div>
-                        
+                        <div class="col-6">
+                            <label class="small fw-bold text-muted">Nama Lengkap</label>
+                            <input type="text" name="nama_lengkap" class="form-control @error('nama_lengkap', 'create') is-invalid @enderror" 
+                                value="{{ old('nama_lengkap') }}" required>
+                            @error('nama_lengkap', 'create')
+                                <span class="text-danger small mt-1 d-block">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="col-6">
+                            <label class="small fw-bold text-muted">Username</label>
+                            <input type="text" name="username" class="form-control @error('username', 'create') is-invalid @enderror" 
+                                value="{{ old('username') }}" required>
+                            @error('username', 'create')
+                                <span class="text-danger small mt-1 d-block">{{ $message }}</span>
+                            @enderror
+                        </div>
                         <!-- DROPDOWN JABATAN (Dari Database) -->
-                        <div class="col-12"><label class="small fw-bold text-muted">Jabatan</label>
-                            <select name="id_jabatan" class="form-select" required>
+                        <div class="col-12">
+                            <label class="small fw-bold text-muted">Jabatan</label>
+                            <select name="id_jabatan" class="form-select @error('id_jabatan', 'create') is-invalid @enderror" required>
                                 <option value="">Pilih Jabatan...</option>
-                                @foreach($jabatan as $j) 
-                                    <option value="{{ $j->id }}">{{ $j->nama_jabatan }}</option> 
+                                @foreach($jabatan as $j)
+                                    <option value="{{ $j->id }}" {{ old('id_jabatan') == $j->id ? 'selected' : '' }}>{{ $j->nama_jabatan }}</option>
                                 @endforeach
                             </select>
+                            @error('id_jabatan', 'create')
+                                <span class="text-danger small mt-1 d-block">{{ $message }}</span>
+                            @enderror
                         </div>
 
-                        <div class="col-12"><label class="small fw-bold text-muted">Divisi</label>
+                        <div class="col-12">
+                            <label class="small fw-bold text-muted">Divisi</label>
                             <select name="id_divisi" class="form-select">
                                 <option value="">- Tidak Ada -</option>
                                 @foreach($divisi as $d) 
-                                    {{-- Sesuai screenshot, kolomnya nama_divisi & id --}}
                                     <option value="{{ $d->id }}">{{ $d->nama_divisi }}</option> 
                                 @endforeach
                             </select>
                         </div>
 
-                        <div class="col-6"><label class="small fw-bold text-muted">Email</label><input type="email" name="email" class="form-control"></div>
-                        <div class="col-6"><label class="small fw-bold text-muted">No. HP</label><input type="text" name="nomor_hp" class="form-control"></div>
-                        <div class="col-12"><label class="small fw-bold text-muted">Password Awal</label><input type="text" name="password" class="form-control" value="lem_spsi_{{ date('Y') }}" required></div>
+                        <div class="col-6">
+                            <label class="small fw-bold text-muted">Email</label>
+                            <input type="email" name="email" class="form-control @error('email', 'create') is-invalid @enderror" 
+                                value="{{ old('email') }}">
+                            @error('email', 'create')
+                                <span class="text-danger small mt-1 d-block">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="col-6">
+                            <label class="small fw-bold text-muted">No. HP</label>
+                            <input type="text" name="nomor_hp" class="form-control @error('nomor_hp', 'create') is-invalid @enderror" 
+                                value="{{ old('nomor_hp') }}">
+                            @error('nomor_hp', 'create')
+                                <span class="text-danger small mt-1 d-block">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="col-12">
+                            <label class="small fw-bold text-muted">Password Awal</label>
+                            <input type="text" name="password" class="form-control @error('password', 'create') is-invalid @enderror" 
+                                value="{{ old('password', 'lem_spsi_' . date('Y')) }}" required minlength="6">
+                            @error('password', 'create')
+                                <span class="text-danger small mt-1 d-block">{{ $message }}</span>
+                            @enderror
+                            <small class="text-muted">Minimal 6 karakter</small>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer border-top-0">
@@ -237,18 +277,34 @@
                 @csrf @method('PUT')
                 <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-12"><label class="small fw-bold text-muted">Nama</label><input type="text" name="nama_lengkap" id="edit_nama" class="form-control" required></div>
-                        <div class="col-6"><label class="small fw-bold text-muted">Username</label><input type="text" name="username" id="edit_username" class="form-control" required></div>
-                        <div class="col-6"><label class="small fw-bold text-muted">No. HP</label><input type="text" name="nomor_hp" id="edit_hp" class="form-control"></div>
-                        <div class="col-12"><label class="small fw-bold text-muted">Email</label><input type="email" name="email" id="edit_email" class="form-control"></div>
+                        <div class="col-12">
+                            <label class="small fw-bold text-muted">Nama</label>
+                            <input type="text" name="nama_lengkap" id="edit_nama" class="form-control" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="small fw-bold text-muted">Username</label>
+                            <input type="text" name="username" id="edit_username" class="form-control" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="small fw-bold text-muted">No. HP</label>
+                            <input type="text" name="nomor_hp" id="edit_hp" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <label class="small fw-bold text-muted">Email</label>
+                            <input type="email" name="email" id="edit_email" class="form-control">
+                        </div>
                         
-                        <div class="col-12"><label class="small fw-bold text-muted">Jabatan</label>
+                        <div class="col-12">
+                            <label class="small fw-bold text-muted">Jabatan</label>
                             <select name="id_jabatan" id="edit_jabatan" class="form-select" required>
-                                @foreach($jabatan as $j) <option value="{{ $j->id }}">{{ $j->nama_jabatan }}</option> @endforeach
+                                @foreach($jabatan as $j) 
+                                    <option value="{{ $j->id }}">{{ $j->nama_jabatan }}</option> 
+                                @endforeach
                             </select>
                         </div>
                         
-                        <div class="col-12"><label class="small fw-bold text-muted">Divisi</label>
+                        <div class="col-12">
+                            <label class="small fw-bold text-muted">Divisi</label>
                             <select name="id_divisi" id="edit_divisi" class="form-select">
                                 <option value="">- Tidak Ada -</option>
                                 @foreach($divisi as $d) 
@@ -276,11 +332,20 @@
             </div>
             <form id="formReset" method="POST">
                 @csrf @method('PUT')
+                <input type="hidden" name="user_name" id="resetUserName">
                 <div class="modal-body">
-                    <input type="password" name="new_password" class="form-control" placeholder="Password Baru" required>
+                    <input type="password" name="new_password" class="form-control @error('new_password', 'reset') is-invalid @enderror" 
+                        placeholder="Password Baru" 
+                        value="{{ old('new_password') }}" required minlength="6">
+                    @error('new_password', 'reset')
+                        <span class="text-danger small mt-2 d-block fw-medium">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>{{ $message }}
+                        </span>
+                    @enderror
+                    <small class="text-muted mt-1 d-block">Password minimal 6 karakter</small>
                 </div>
                 <div class="modal-footer border-top-0">
-                    <button class="btn btn-warning w-100 text-white">Ubah Password</button>
+                    <button type="submit" class="btn btn-warning w-100 text-white">Ubah Password</button>
                 </div>
             </form>
         </div>
@@ -288,8 +353,49 @@
 </div>
 
 {{-- JAVASCRIPT: HANYA UNTUK UI INTERACTION (MODAL) --}}
-{{-- Tidak ada pengambilan data Ajax di sini. Semua data dari parameter function onclick HTML --}}
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Cek error untuk form Tambah Anggota
+        @if ($errors->hasBag('create') && $errors->create->any())
+            const modalCreate = new bootstrap.Modal(document.getElementById('modalCreate'));
+            modalCreate.show();
+            
+            // Scroll ke field pertama yang error
+            const firstError = document.querySelector('#modalCreate .is-invalid');
+            if (firstError) {
+                setTimeout(() => {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstError.focus();
+                }, 300);
+            }
+        @endif
+
+        // Cek error untuk form Reset Password
+        @if ($errors->hasBag('reset') && $errors->reset->any())
+            const userId = '{{ session('reset_user_id') }}';
+            const userName = '{{ session('reset_user_name') }}';
+            
+            if(userId && userName) {
+                // Set ulang action form dan nama user
+                document.getElementById('formReset').action = `/users/${userId}/reset-password`;
+                document.getElementById('resetName').innerText = userName;
+                document.getElementById('resetUserName').value = userName;
+                
+                // Buka modal
+                const modalReset = new bootstrap.Modal(document.getElementById('modalReset'));
+                modalReset.show();
+                
+                // Fokus ke input password
+                setTimeout(() => {
+                    const passwordInput = document.querySelector('#modalReset input[name="new_password"]');
+                    if (passwordInput) {
+                        passwordInput.focus();
+                    }
+                }, 300);
+            }
+        @endif
+    });
+
     // 1. Fungsi Buka Modal QR
     function bukaModalQr(nama, jabatan, qrString, id) {
         document.getElementById('qrName').innerText = nama;
@@ -317,7 +423,19 @@
     // 2. Fungsi Buka Modal Reset
     function bukaModalReset(id, nama) {
         document.getElementById('resetName').innerText = nama;
+        document.getElementById('resetUserName').value = nama;
         document.getElementById('formReset').action = `/users/${id}/reset-password`;
+        
+        // Reset error messages
+        const errorEl = document.querySelector('#modalReset .text-danger');
+        if (errorEl) errorEl.remove();
+        
+        const input = document.querySelector('#modalReset input[name="new_password"]');
+        if (input) {
+            input.value = '';
+            input.classList.remove('is-invalid');
+        }
+        
         new bootstrap.Modal(document.getElementById('modalReset')).show();
     }
 

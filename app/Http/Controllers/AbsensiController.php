@@ -130,7 +130,7 @@ class AbsensiController extends Controller
         }
 
         $today = Carbon::now()->toDateString();
-        $now   = Carbon::now()->toTimeString();
+        $now   = Carbon::now(); // Object Carbon lengkap untuk hitungan waktu
 
         $riwayat = DB::table('Riwayat_Absensi')
             ->where('id_anggota', $anggota->id)
@@ -138,6 +138,7 @@ class AbsensiController extends Controller
             ->first();
 
         try {
+            // SKENARIO 1: BELUM ABSEN (DATANG)
             if (!$riwayat) {
                 if (Carbon::now()->isSunday()) {
                     return response()->json(['status' => 'error', 'message' => 'Absensi Libur Hari Minggu.']);
@@ -146,7 +147,7 @@ class AbsensiController extends Controller
                 DB::statement('CALL sp_absen_masuk(?, ?, ?, ?)', [
                     $anggota->id,
                     $today,
-                    $now,
+                    $now->toTimeString(),
                     'QR_MESIN'
                 ]);
                   DB::statement("CALL sp_notif_qr_harian(?, ?, ?)", [
@@ -159,34 +160,64 @@ class AbsensiController extends Controller
                     'status' => 'success',
                     'type' => 'MASUK',
                     'nama' => $anggota->nama_lengkap,
-                    'waktu' => $now,
+                    'waktu' => $now->toTimeString(),
                     'message' => 'Selamat Datang, ' . $anggota->nama_lengkap
                 ]);
             }
 
+            // SKENARIO 2: SUDAH ABSEN MASUK, PROSES PULANG ATAU CEGAH DOUBLE SCAN
             if ($riwayat && $riwayat->status_kehadiran == 'HADIR' && $riwayat->jam_pulang == null) {
+                
+                // --- LOGIKA BARU: Cek selisih waktu dari Jam Masuk ---
+                $jamMasuk = Carbon::parse($riwayat->jam_masuk);
+                $selisihMenit = $jamMasuk->diffInMinutes($now);
+
+                if ($selisihMenit < 60) {
+                    // Jika kurang dari 60 menit, anggap ini konfirmasi sukses saja (Tanpa update DB)
+                    // Menggunakan tipe 'INFO' atau 'WARNING' (tapi status success) agar UI tidak merah error
+                    return response()->json([
+                        'status' => 'success', 
+                        'type' => 'MASUK', // Tetap tampilkan sebagai MASUK agar user tidak bingung
+                        'nama' => $anggota->nama_lengkap,
+                        'waktu' => $now->toTimeString(),
+                        'message' => 'Absen Masuk Sudah Tercatat. (Scan Pulang tersedia setelah 1 jam)'
+                    ]);
+                }
+                // -----------------------------------------------------
+
+                // Jika sudah > 60 menit, barulah proses ABSEN PULANG
                 DB::statement('CALL sp_absen_pulang(?, ?, ?)', [
                     $anggota->id,
                     $today,
-                    $now
+                    $now->toTimeString()
                 ]);
 
                 return response()->json([
                     'status' => 'success',
                     'type' => 'PULANG',
                     'nama' => $anggota->nama_lengkap,
-                    'waktu' => $now,
+                    'waktu' => $now->toTimeString(),
                     'message' => 'Hati-hati di jalan, ' . $anggota->nama_lengkap
                 ]);
             }
 
+            // SKENARIO 3: SUDAH PULANG
             if ($riwayat && $riwayat->jam_pulang != null) {
-                return response()->json(['status' => 'error', 'message' => 'Anda sudah absen pulang hari ini.']);
+                // Return success info saja supaya tidak bunyi error berisik, tapi kasih pesan sudah selesai
+                return response()->json([
+                    'status' => 'success', // Ganti ke success biar UI hijau/kuning
+                    'type' => 'INFO', 
+                    'nama' => $anggota->nama_lengkap,
+                    'waktu' => $now->toTimeString(),
+                    'message' => 'Anda sudah menyelesaikan absensi hari ini.'
+                ]);
             }
 
+            // SKENARIO 4: STATUS LAIN (IZIN/DINAS/SAKIT)
             if ($riwayat && $riwayat->status_kehadiran != 'HADIR') {
                 return response()->json(['status' => 'error', 'message' => 'Status Anda hari ini: ' . $riwayat->status_kehadiran]);
             }
+
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => 'System Error: ' . $e->getMessage()]);
         }
