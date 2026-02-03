@@ -13,19 +13,65 @@
 <div class="card border-0 shadow-sm mb-4 no-print">
 <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
 <!-- Menu Tipe Laporan -->
-<div class="btn-group bg-light p-1 rounded-3">
-<a href="?type=flow&bulan={{$bulan}}&tahun={{$tahun}}"
-class="btn btn-sm {{ $type == 'flow' ? 'btn-white shadow-sm fw-bold' : 'text-muted' }}">
-Dana Masuk/Keluar
-</a>
-<a href="?type=position&bulan={{$bulan}}&tahun={{$tahun}}"
-class="btn btn-sm {{ $type == 'position' ? 'btn-white shadow-sm fw-bold' : 'text-muted' }}">
-Posisi Keuangan
-</a>
-<a href="?type=summary&bulan={{$bulan}}&tahun={{$tahun}}"
-class="btn btn-sm {{ $type == 'summary' ? 'btn-white shadow-sm fw-bold' : 'text-muted' }}">
-Laporan Organisasi
-</a>
+@php
+    // Helper untuk Judul di Dropdown Mobile
+    $labels = [
+        'flow' => 'Dana Masuk/Keluar',
+        'position' => 'Posisi Keuangan',
+        'summary' => 'Laporan Organisasi'
+    ];
+    $currentLabel = $labels[$type] ?? 'Dana Masuk/Keluar';
+@endphp
+
+<!-- OPTION 1: TAMPILAN DESKTOP (Muncul di Laptop/Tablet) -->
+<div class="d-none d-md-block">
+    <div class="btn-group bg-light p-1 rounded-3 w-100">
+        <a href="?type=flow&bulan={{$bulan}}&tahun={{$tahun}}"
+           class="btn btn-sm {{ $type == 'flow' ? 'btn-white shadow-sm fw-bold text-primary' : 'text-muted' }}">
+            Dana Masuk/Keluar
+        </a>
+        <a href="?type=position&bulan={{$bulan}}&tahun={{$tahun}}"
+           class="btn btn-sm {{ $type == 'position' ? 'btn-white shadow-sm fw-bold text-primary' : 'text-muted' }}">
+            Posisi Keuangan
+        </a>
+        <a href="?type=summary&bulan={{$bulan}}&tahun={{$tahun}}"
+           class="btn btn-sm {{ $type == 'summary' ? 'btn-white shadow-sm fw-bold text-primary' : 'text-muted' }}">
+            Laporan Organisasi
+        </a>
+    </div>
+</div>
+
+<!-- OPTION 2: TAMPILAN MOBILE (Muncul di HP) -->
+<div class="d-block d-md-none mb-3">
+    <div class="dropdown">
+        <button class="btn btn-light w-100 border text-start d-flex justify-content-between align-items-center py-2 px-3 rounded-3 shadow-sm" 
+                type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="fw-bold text-dark">
+                <i class="fa-solid fa-file-invoice me-2 text-primary"></i> {{ $currentLabel }}
+            </span>
+            <i class="fa-solid fa-chevron-down text-muted"></i>
+        </button>
+        <ul class="dropdown-menu w-100 shadow-sm border-0 mt-1 rounded-3">
+            <li>
+                <a class="dropdown-item py-2 {{ $type == 'flow' ? 'active fw-bold' : '' }}" 
+                   href="?type=flow&bulan={{$bulan}}&tahun={{$tahun}}">
+                   Dana Masuk/Keluar
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item py-2 {{ $type == 'position' ? 'active fw-bold' : '' }}" 
+                   href="?type=position&bulan={{$bulan}}&tahun={{$tahun}}">
+                   Posisi Keuangan
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item py-2 {{ $type == 'summary' ? 'active fw-bold' : '' }}" 
+                   href="?type=summary&bulan={{$bulan}}&tahun={{$tahun}}">
+                   Laporan Organisasi
+                </a>
+            </li>
+        </ul>
+    </div>
 </div>
 <!-- Navigasi Bulan -->
 <div class="d-flex align-items-center gap-3 bg-white border rounded-pill px-3 py-1">

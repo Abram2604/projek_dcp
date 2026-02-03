@@ -15,14 +15,13 @@
     /* Card Styling */
     .card-compact { border-radius: 16px; }
     
-    /* Navigation Pills Consistent Style */
+    /* Navigation Pills Consistent Style (DESKTOP) */
     .nav-container {
         background-color: #ffffff;
         padding: 0.5rem;
         border-radius: 50rem;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         border: 1px solid #f3f4f6;
-        display: inline-flex;
         gap: 0.5rem;
     }
     .nav-pills-custom .nav-link {
@@ -38,6 +37,53 @@
 
     /* Icon Status */
     .status-icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+
+    /* Styling khusus Radio Button Card */
+    .btn-check:checked + label {
+        background-color: #f8fafc;
+        border-color: #4f46e5 !important;
+        border-width: 2px !important;
+        box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.1);
+    }
+    .btn-check:checked + label i { transform: scale(1.1); transition: 0.2s; }
+
+    /* =========================================
+       TAMBAHAN CSS KHUSUS MOBILE DROPDOWN
+       ========================================= */
+    .mobile-nav-toggler {
+        background-color: #4f46e5;
+        color: white;
+        border: none;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .mobile-nav-toggler:hover, .mobile-nav-toggler:focus {
+        background-color: #4338ca;
+        color: white;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+    /* Dropdown Menu Style */
+    .dropdown-menu-custom {
+        border: 1px solid #f3f4f6;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        border-radius: 16px;
+        padding: 0.5rem;
+    }
+    .dropdown-menu-custom .dropdown-item {
+        border-radius: 12px;
+        padding: 10px 15px;
+        font-size: 0.9rem;
+        color: #64748b;
+        font-weight: 500;
+        margin-bottom: 2px;
+    }
+    .dropdown-menu-custom .dropdown-item:active, 
+    .dropdown-menu-custom .dropdown-item.active {
+        background-color: #e0e7ff; /* Ungu Muda */
+        color: #4f46e5;
+        font-weight: 700;
+    }
+    
 </style>
 
 {{-- ALERT --}}
@@ -58,23 +104,35 @@
 @endif
 
 {{-- UNIFIED NAVIGATION BAR --}}
-@php $activeTab = request('tab') ?? 'qr'; @endphp
+@php 
+    // Menentukan Tab Aktif & Label untuk Mobile
+    $activeTab = request('tab') ?? 'qr'; 
+    $tabLabels = [
+        'qr' => ['icon' => 'fa-qrcode', 'text' => 'Scan QR'],
+        'dinas' => ['icon' => 'fa-briefcase', 'text' => 'Absen Dinas'],
+        'izin' => ['icon' => 'fa-file-medical', 'text' => 'Izin / Sakit'],
+        'rekap' => ['icon' => 'fa-chart-pie', 'text' => 'Rekap (BPH)']
+    ];
+    $currentLabel = $tabLabels[$activeTab] ?? $tabLabels['qr'];
+@endphp
 
 <div class="mb-4">
-    <div class="nav-container">
+    
+    <!-- TAMPILAN DESKTOP (d-none d-md-inline-flex) -->
+    <div class="nav-container d-none d-md-inline-flex">
         <ul class="nav nav-pills nav-pills-custom" id="attendanceTab" role="tablist">
             <li class="nav-item">
-                <button class="nav-link {{ $activeTab == 'qr' ? 'active' : '' }}" id="qr-tab" data-bs-toggle="pill" data-bs-target="#pills-qr" type="button">
+                <button class="nav-link {{ $activeTab == 'qr' ? 'active' : '' }}" id="qr-tab" data-bs-toggle="pill" data-bs-target="#pills-qr" type="button" onclick="updateMobileLabel('Scan QR', 'fa-qrcode')">
                     <i class="fa-solid fa-qrcode"></i> Scan QR
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link {{ $activeTab == 'dinas' ? 'active' : '' }}" id="dinas-tab" data-bs-toggle="pill" data-bs-target="#pills-dinas" type="button">
+                <button class="nav-link {{ $activeTab == 'dinas' ? 'active' : '' }}" id="dinas-tab" data-bs-toggle="pill" data-bs-target="#pills-dinas" type="button" onclick="updateMobileLabel('Absen Dinas', 'fa-briefcase')">
                     <i class="fa-solid fa-briefcase"></i> Absen Dinas
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link {{ $activeTab == 'izin' ? 'active' : '' }}" id="izin-tab" data-bs-toggle="pill" data-bs-target="#pills-izin" type="button">
+                <button class="nav-link {{ $activeTab == 'izin' ? 'active' : '' }}" id="izin-tab" data-bs-toggle="pill" data-bs-target="#pills-izin" type="button" onclick="updateMobileLabel('Izin / Sakit', 'fa-file-medical')">
                     <i class="fa-solid fa-file-medical"></i> Izin / Sakit
                 </button>
             </li>
@@ -86,6 +144,49 @@
             </li>
             @endif
         </ul>
+    </div>
+
+    <!-- TAMPILAN MOBILE (d-md-none) -->
+    <div class="d-md-none position-relative">
+        <div class="dropdown">
+            <button class="btn mobile-nav-toggler w-100 p-3 rounded-4 shadow-sm d-flex justify-content-between align-items-center" 
+                    type="button" id="mobileMenuBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                <span id="mobileMenuLabel" class="d-flex align-items-center gap-2 fs-6">
+                    <i class="fa-solid {{ $currentLabel['icon'] }}" id="mobileMenuIcon"></i> 
+                    <span>{{ $currentLabel['text'] }}</span>
+                </span>
+                <i class="fa-solid fa-chevron-down opacity-50"></i>
+            </button>
+            
+            <ul class="dropdown-menu dropdown-menu-custom w-100 mt-2 animate-in fade-in" aria-labelledby="mobileMenuBtn">
+                <li>
+                    <button class="dropdown-item d-flex align-items-center gap-2 {{ $activeTab == 'qr' ? 'active' : '' }}" 
+                        onclick="triggerTab('qr-tab', 'Scan QR', 'fa-qrcode')">
+                        <i class="fa-solid fa-qrcode w-5 text-center"></i> Scan QR
+                    </button>
+                </li>
+                <li>
+                    <button class="dropdown-item d-flex align-items-center gap-2 {{ $activeTab == 'dinas' ? 'active' : '' }}" 
+                        onclick="triggerTab('dinas-tab', 'Absen Dinas', 'fa-briefcase')">
+                        <i class="fa-solid fa-briefcase w-5 text-center"></i> Absen Dinas
+                    </button>
+                </li>
+                <li>
+                    <button class="dropdown-item d-flex align-items-center gap-2 {{ $activeTab == 'izin' ? 'active' : '' }}" 
+                        onclick="triggerTab('izin-tab', 'Izin / Sakit', 'fa-file-medical')">
+                        <i class="fa-solid fa-file-medical w-5 text-center"></i> Izin / Sakit
+                    </button>
+                </li>
+                @if(session('user_level') == 'BPH')
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a href="{{ route('absensi.rekap') }}" class="dropdown-item d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-chart-pie w-5 text-center"></i> Rekap (BPH)
+                    </a>
+                </li>
+                @endif
+            </ul>
+        </div>
     </div>
 </div>
 
@@ -328,17 +429,6 @@
     </div>
 </div>
 
-<style>
-    /* Styling khusus Radio Button Card */
-    .btn-check:checked + label {
-        background-color: #f8fafc;
-        border-color: #4f46e5 !important;
-        border-width: 2px !important;
-        box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.1);
-    }
-    .btn-check:checked + label i { transform: scale(1.1); transition: 0.2s; }
-</style>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const forms = document.querySelectorAll('.form-loading');
@@ -351,6 +441,22 @@
             });
         });
     });
+    function updateMobileLabel(text, iconClass) {
+        document.querySelector('#mobileMenuLabel span').innerText = text;
+        const icon = document.querySelector('#mobileMenuIcon');
+        icon.className = ''; 
+        icon.classList.add('fa-solid', iconClass);
+    }
+
+    function triggerTab(tabId, labelText, iconClass) {
+        const tabTriggerEl = document.getElementById(tabId);
+        const tab = new bootstrap.Tab(tabTriggerEl);
+        tab.show();
+        updateMobileLabel(labelText, iconClass);
+        const dropdownItems = document.querySelectorAll('.dropdown-menu-custom .dropdown-item');
+        dropdownItems.forEach(item => item.classList.remove('active'));
+        event.target.closest('.dropdown-item').classList.add('active'); 
+    }
 </script>
 
 @endsection

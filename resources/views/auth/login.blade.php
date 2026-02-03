@@ -55,7 +55,7 @@
                 </div>
 
                 <button type="submit" class="btn-login">
-                    Masuk ke Dashboard
+                    Masuk
                 </button>
             </form>
 

@@ -14,20 +14,27 @@
 
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-body p-4">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 mb-4">
-            <form action="{{ route('users.index') }}" method="GET" class="w-100" style="max-width: 400px;">
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" name="search" class="form-control bg-light border-start-0 ps-0" 
-                           placeholder="Cari nama atau username..." 
-                           value="{{ request('search') }}">
-                </div>
-            </form>
-            
-            <button class="btn btn-primary px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#modalCreate">
-                <i class="fa-solid fa-plus me-2"></i> Tambah Anggota
-            </button>
+       <!-- Gunakan justify-content-between agar Search di Kiri dan Tombol mentok di Kanan -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    
+    <form action="{{ route('users.index') }}" method="GET" style="width: 300px; max-width: 80%;">
+        <div class="input-group">
+            <span class="input-group-text bg-light border-end-0 text-muted">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input type="text" name="search" class="form-control bg-light border-start-0 ps-0" 
+                   placeholder="Cari nama..." 
+                   value="{{ request('search') }}">
         </div>
+    </form>
+    
+    <!-- 2. TOMBOL TAMBAH -->
+    <button class="btn btn-primary px-3 fw-bold text-nowrap shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCreate">
+        <i class="fa-solid fa-plus"></i> 
+        <span class="d-none d-sm-inline ms-1">Tambah Anggota</span>
+    </button>
+
+</div>
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead class="bg-light text-uppercase text-muted small">

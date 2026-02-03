@@ -234,6 +234,7 @@ body {
 
     /* 3. Reset Margin Konten Utama (Full Width) */
     .main-content {
+        padding: 1rem;
         margin-left: 0;
     }
 

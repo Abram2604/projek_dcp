@@ -5,7 +5,21 @@
 @section('header_subtitle', 'Manajemen rencana kerja dan rancangan anggaran.')
 
 @section('content')
+<style>
+    .nav-pills .nav-link {
+        background-color: #ffffff;     
+        color: #0d6efd;                 
+        border: 1px solid #e2e8f0;      
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+    .nav-pills .nav-link:hover {
+        background-color: #0d6efd;      
+        color: #ffffff;       
+        transform: translateY(-1px);   
+    }
 
+</style>
 <!-- Notifikasi -->
 @if(session('success'))
     <div class="alert alert-success d-flex align-items-center rounded-3 mb-4" role="alert">
@@ -21,7 +35,7 @@
             <form action="{{ route('progja.index') }}" method="GET" class="d-flex align-items-center gap-2">
                 <!-- Pertahankan tab saat filter -->
                 <input type="hidden" name="tab" value="{{ $activeTab }}">
-                <select name="divisi_id" class="form-select form-select-sm" style="width: 250px;" onchange="this.form.submit()">
+                <select name="divisi_id" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="">-- Semua Divisi --</option>
                     @foreach($divisiList as $d)
                         <option value="{{ $d->id }}" {{ $filterDivisi == $d->id ? 'selected' : '' }}>

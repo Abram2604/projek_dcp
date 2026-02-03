@@ -53,11 +53,6 @@
             <i class="fa-solid fa-chart-line"></i>
             <span>Program Kerja</span>
         </a>
-        
-        <a href="{{ route('profile') }}" class="nav-item {{ request()->routeIs('profile') ? 'active' : '' }}">
-            <i class="fa-solid fa-id-card"></i>
-            <span>Profil Saya</span>
-        </a>
 
         <!-- Keuangan (Hanya BPH) -->
         @if($isBPH)

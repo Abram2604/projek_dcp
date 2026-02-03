@@ -1,14 +1,13 @@
 <div class="d-flex justify-content-between align-items-center mb-5">
     
     <!-- Bagian Kiri: Tombol Mobile & Judul -->
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex align-items-center gap-1">
         <!-- Tombol Mobile Toggle -->
-          <button id="sidebarToggle" class="btn btn-light d-lg-none shadow-sm border-0 me-3">
+          <button id="sidebarToggle" class="btn btn-light d-lg-none shadow-sm border-0 me-2">
                 <i class="fa-solid fa-bars text-primary fa-lg"></i>
             </button>
         <div>
             <h4 class="fw-bold text-dark m-0">@yield('header_title')</h4>
-            <small class="text-muted">@yield('header_subtitle')</small>
         </div>
     </div>
 
