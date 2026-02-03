@@ -17,12 +17,44 @@ class NotifikasiController extends Controller
                         ->orderBy('dibuat_pada', 'desc')
                         ->paginate(15);
 
-        // 2. Tandai semua sebagai "Sudah Dibaca" saat halaman dibuka
-        DB::table('Notifikasi')
+        
+        /*DB::table('Notifikasi')
             ->where('id_anggota', $userId)
             ->where('is_read', 0)
             ->update(['is_read' => 1, 'diupdate_pada' => now()]);
+            */
 
         return view('pages.notifikasi.index', compact('notifikasi'));
+    }
+      public function markAsRead($id)
+    {
+        $userId = Auth::id();
+
+        // Update status jadi 1 (sudah dibaca)
+        DB::table('Notifikasi')
+            ->where('id', $id)
+            ->where('id_anggota', $userId)
+            ->update([
+                'is_read' => 1, 
+                'diupdate_pada' => now()
+            ]);
+
+        return back()->with('success', 'Notifikasi ditandai sudah dibaca.');
+    }
+
+    // 3. Fungsi Tandai Semua (Tombol "Baca Semua")
+    public function markAllRead()
+    {
+        $userId = Auth::id();
+
+        DB::table('Notifikasi')
+            ->where('id_anggota', $userId)
+            ->where('is_read', 0) 
+            ->update([
+                'is_read' => 1, 
+                'diupdate_pada' => now()
+            ]);
+
+        return back()->with('success', 'Semua notifikasi telah ditandai sudah dibaca.');
     }
 }

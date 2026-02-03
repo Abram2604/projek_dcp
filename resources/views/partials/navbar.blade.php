@@ -37,7 +37,8 @@
                 <div class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
                     @if(isset($navbar_notif) && count($navbar_notif) > 0)
                         @foreach($navbar_notif as $notif)
-                            <a href="{{ $notif->link_url ?? '#' }}" class="list-group-item list-group-item-action p-3 {{ $notif->is_read == 0 ? 'bg-light fw-semibold' : '' }}">
+                            <a href="{{ route('notifikasi.index') }}" class="list-group-item list-group-item-action p-3 {{ $notif->is_read == 0 ? 'bg-light fw-semibold' : '' }}">
+                                <div class="d-flex align-items-start gap-3">
                                     <div class="mt-1">
                                         @if($notif->tipe == 'success') <i class="fa-solid fa-circle-check text-success"></i>
                                         @elseif($notif->tipe == 'alert') <i class="fa-solid fa-circle-exclamation text-danger"></i>
